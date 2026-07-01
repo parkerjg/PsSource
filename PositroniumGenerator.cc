@@ -39,6 +39,13 @@ PositroniumGenerator::PositroniumGenerator()
     SyncProviderConfiguration();
 }
 
+void PositroniumGenerator::SetThreeGammaModel(
+    PositroniumProvider::ThreeGammaModel model
+)
+{
+    m_provider.SetThreeGammaModel(model);
+}
+
 void PositroniumGenerator::SetSourcePosition(std::array<double, 3> pos_mm)
 {
     m_source_position_mm = pos_mm;
@@ -315,6 +322,15 @@ void PositroniumGenerator::FillTruthFromTimedEventSpec(const TimedEventSpec& spe
     truth->generation_mode = PositroniumTruthInfo::GenerationMode::ExplicitProvider;
     truth->source_tag = PositroniumTruthInfo::SourceTag::ExplicitPhotonVertices;
     truth->source_is_explicit = true;
+
+    truth->physics_model_name =
+        spec.physics_model_name;
+
+    truth->physics_model_version =
+        spec.physics_model_version;
+
+    truth->physics_validation_status =
+        spec.physics_validation_status;
 
     FillRequestedTruthMetadata(truth);
 

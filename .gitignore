@@ -1,0 +1,62 @@
+# Build products
+ps_main
+ps_timing
+ps_pointsource
+provider_smoke
+ore_powell_smoke
+*.o
+*.so
+*.a
+*.out
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Routine simulation outputs
+annihilation_summary.csv
+annihilation_gammas.csv
+hits_plus.csv
+hits_minus.csv
+hits.csv
+run_config.json
+
+# Generated validation and benchmark data
+validation_runs/
+timing_matrix/
+pointsource_matrix/
+pointsource_replicates/
+sweep_ortho_ps/
+audit_mixed_cone/
+audit_pure3g_cone/
+audit_pure3g_unified/
+diag/
+probe/
+paper_data/
+paper_data_errorbars/
+paper_tables/
+release_freeze/
+FROZEN_EXPERIMENT_*/
+implementation_checkpoint/runs/
+generated_outputs_previous/
+
+# Generated comparison products
+three_gamma_comparison_*.csv
+three_gamma_comparison_*.png
+
+# Runtime logs
+*.log
+!implementation_checkpoint/logs/
+!implementation_checkpoint/logs/build_smoke.log
+!implementation_checkpoint/logs/final_git_smoke.log
+time.txt
+
+# Local environments and secrets
+.env
+.venv/
+
+# Editor / OS
+*~
+.DS_Store

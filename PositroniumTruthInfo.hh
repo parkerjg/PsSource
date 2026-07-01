@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <string>
 
 class PositroniumTruthInfo : public G4VUserEventInformation {
 public:
@@ -28,6 +29,10 @@ public:
 
     PositroniumTruthInfo() = default;
     virtual ~PositroniumTruthInfo() = default;
+
+    std::string physics_model_name;
+    std::string physics_model_version;
+    std::string physics_validation_status;
 
     virtual void Print() const override {}
 

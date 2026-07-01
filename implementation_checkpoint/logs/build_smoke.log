@@ -1,0 +1,168 @@
+-------------------------------------------------------
+Compiler       : /N/project/MIPHYS/QEPET/env/bin/x86_64-conda-linux-gnu-c++
+Geant4 config  : /N/project/MIPHYS/QEPET/env/bin/geant4-config
+Geant4 version : 11.3.2
+Build mode     : standalone Geant4
+-------------------------------------------------------
+
+[1/5] Building ps_main ...
+main.cc: In function 'const char* GenerationModeName(GenerationModeChoice)':
+main.cc:93:60: warning: declaration of 'm' shadows a global declaration [-Wshadow]
+   93 | static const char* GenerationModeName(GenerationModeChoice m)
+      |                                       ~~~~~~~~~~~~~~~~~~~~~^
+In file included from /N/project/MIPHYS/QEPET/env/include/CLHEP/Units/PhysicalConstants.h:45,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Vector/RotationX.icc:11,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Vector/RotationX.h:281,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Vector/Rotation.h:26,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Geometry/Transform3D.icc:6,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Geometry/Transform3D.h:837,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/G4Transform3D.hh:31,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/HepPolyhedron.h:210,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/G4Polyhedron.hh:129,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/G4Box.hh:53,
+                 from main.cc:3:
+/N/project/MIPHYS/QEPET/env/include/CLHEP/Units/SystemOfUnits.h:113:27: note: shadowed declaration is here
+  113 |   static constexpr double m  = meter;
+      |                           ^
+main.cc: In function 'const char* DelayModeName(DelayModeChoice)':
+main.cc:139:50: warning: declaration of 'm' shadows a global declaration [-Wshadow]
+  139 | static const char* DelayModeName(DelayModeChoice m)
+      |                                  ~~~~~~~~~~~~~~~~^
+/N/project/MIPHYS/QEPET/env/include/CLHEP/Units/SystemOfUnits.h:113:27: note: shadowed declaration is here
+  113 |   static constexpr double m  = meter;
+      |                           ^
+main.cc: In function 'std::string JsonEscape(const std::string&)':
+main.cc:249:50: warning: declaration of 's' shadows a global declaration [-Wshadow]
+  249 | static std::string JsonEscape(const std::string& s)
+      |                               ~~~~~~~~~~~~~~~~~~~^
+/N/project/MIPHYS/QEPET/env/include/CLHEP/Units/SystemOfUnits.h:158:28: note: shadowed declaration is here
+  158 |   static constexpr double  s = second;
+      |                            ^
+
+[2/5] Building ps_timing ...
+main_timing.cc: In function 'const char* GenerationModeName(GenerationModeChoice)':
+main_timing.cc:106:60: warning: declaration of 'm' shadows a global declaration [-Wshadow]
+  106 | static const char* GenerationModeName(GenerationModeChoice m)
+      |                                       ~~~~~~~~~~~~~~~~~~~~~^
+In file included from /N/project/MIPHYS/QEPET/env/include/CLHEP/Units/PhysicalConstants.h:45,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Vector/RotationX.icc:11,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Vector/RotationX.h:281,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Vector/Rotation.h:26,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Geometry/Transform3D.icc:6,
+                 from /N/project/MIPHYS/QEPET/env/include/CLHEP/Geometry/Transform3D.h:837,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/G4Transform3D.hh:31,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/HepPolyhedron.h:210,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/G4Polyhedron.hh:129,
+                 from /N/project/MIPHYS/QEPET/env/include/Geant4/G4Box.hh:53,
+                 from main_timing.cc:4:
+/N/project/MIPHYS/QEPET/env/include/CLHEP/Units/SystemOfUnits.h:113:27: note: shadowed declaration is here
+  113 |   static constexpr double m  = meter;
+      |                           ^
+main_timing.cc: In function 'const char* DelayModeName(DelayModeChoice)':
+main_timing.cc:129:50: warning: declaration of 'm' shadows a global declaration [-Wshadow]
+  129 | static const char* DelayModeName(DelayModeChoice m)
+      |                                  ~~~~~~~~~~~~~~~~^
+/N/project/MIPHYS/QEPET/env/include/CLHEP/Units/SystemOfUnits.h:113:27: note: shadowed declaration is here
+  113 |   static constexpr double m  = meter;
+      |                           ^
+main_timing.cc: In function 'std::string JsonEscape(const std::string&)':
+main_timing.cc:239:50: warning: declaration of 's' shadows a global declaration [-Wshadow]
+  239 | static std::string JsonEscape(const std::string& s)
+      |                               ~~~~~~~~~~~~~~~~~~~^
+/N/project/MIPHYS/QEPET/env/include/CLHEP/Units/SystemOfUnits.h:158:28: note: shadowed declaration is here
+  158 |   static constexpr double  s = second;
+      |                            ^
+
+[3/5] Smoke-checking ps_main front end ...
+ps_main ran successfully in both native and explicit modes.
+
+[4/5] Running native Geant4 timing smoke test ...
+Native hits_plus.csv preview:
+event_id,track_id,parent_id,pdg_code,creator_process,time_ns,kinetic_energy_MeV,x_mm,y_mm,z_mm,det_name
+0,2,0,22,PRIMARY,0.334609,1.274000,-12.742522,0.328155,99.500000,plus
+3,3,1,22,annihil,0.339829,0.414483,-1.010178,20.708189,99.500000,plus
+8,2,0,22,PRIMARY,0.371704,1.274000,31.080479,39.386155,99.500000,plus
+9,5,1,22,annihil,0.355904,0.383326,35.871678,12.079744,99.500000,plus
+11,2,0,22,PRIMARY,0.334647,1.274000,-2.256805,12.636598,99.500000,plus
+17,3,1,22,annihil,0.355284,0.476106,30.254675,21.858449,99.500000,plus
+31,5,1,22,annihil,0.360521,0.366497,-23.294058,-34.447990,99.500000,plus
+35,5,1,22,annihil,0.377533,0.354824,-22.622367,-48.410014,99.500000,plus
+36,4,1,22,annihil,0.378487,0.140226,26.028588,47.355463,99.500000,plus
+
+Native hits_minus.csv preview:
+event_id,track_id,parent_id,pdg_code,creator_process,time_ns,kinetic_energy_MeV,x_mm,y_mm,z_mm,det_name
+0,5,1,22,annihil,0.374597,0.290170,47.927298,18.980037,-99.500000,minus
+3,4,1,22,annihil,0.381660,0.278767,24.888698,36.867851,-99.500000,minus
+11,3,1,22,annihil,0.339327,0.342274,12.031476,-15.954015,-99.500000,minus
+12,4,1,22,annihil,0.339126,0.371471,19.601290,-1.687248,-99.500000,minus
+14,2,0,22,PRIMARY,0.349274,1.274000,24.311577,-21.744852,-99.500000,minus
+17,2,0,22,PRIMARY,0.365487,1.274000,7.312220,-45.298280,-99.500000,minus
+38,2,0,22,PRIMARY,0.337472,1.274000,16.646282,-7.638466,-99.500000,minus
+39,2,0,22,PRIMARY,0.341627,1.274000,-15.281521,-18.855206,-99.500000,minus
+49,2,0,22,PRIMARY,0.351634,1.274000,22.034514,26.963861,-99.500000,minus
+
+Native annihilation modes:
+479 2
+521 3
+
+Native hit creator processes (combined):
+289 annihil
+2 compt
+127 PRIMARY
+
+Native hit file line counts:
+  200 hits_plus.csv
+  220 hits_minus.csv
+  420 total
+
+[5/5] Running explicit provider timing smoke test ...
+Explicit hits_plus.csv preview:
+event_id,track_id,parent_id,pdg_code,creator_process,time_ns,kinetic_energy_MeV,x_mm,y_mm,z_mm,det_name
+4,2,0,22,PRIMARY,2.988430,0.472125,1.143552,-11.324664,99.500000,plus
+9,2,0,22,PRIMARY,5.994263,0.299051,-1.454841,-27.176102,99.500000,plus
+21,3,0,22,PRIMARY,3.890578,0.264310,12.901057,-31.946210,99.500000,plus
+22,1,0,22,PRIMARY,9.874971,0.345570,-26.017095,-25.922114,99.500000,plus
+33,1,0,22,PRIMARY,1.361933,0.141854,-19.814285,-28.744421,99.500000,plus
+42,1,0,22,PRIMARY,7.760358,0.274384,-6.323781,5.156697,99.500000,plus
+43,3,0,22,PRIMARY,1.472508,0.494701,4.267370,45.704658,99.500000,plus
+49,1,0,22,PRIMARY,3.821076,0.438551,21.484854,25.484750,99.500000,plus
+57,1,0,22,PRIMARY,4.176010,0.359511,-23.273116,24.713100,99.500000,plus
+
+Explicit hits_minus.csv preview:
+event_id,track_id,parent_id,pdg_code,creator_process,time_ns,kinetic_energy_MeV,x_mm,y_mm,z_mm,det_name
+21,1,0,22,PRIMARY,3.879339,0.481783,-13.566983,-17.456639,-99.500000,minus
+32,2,0,22,PRIMARY,3.118405,0.387851,29.574141,-6.468476,-99.500000,minus
+37,3,0,22,PRIMARY,10.460218,0.343577,-25.702080,5.426074,-99.500000,minus
+40,2,0,22,PRIMARY,1.398087,0.249343,34.304305,-33.789177,-99.500000,minus
+43,1,0,22,PRIMARY,1.457685,0.123150,30.948859,13.968898,-99.500000,minus
+49,3,0,22,PRIMARY,3.848381,0.311026,49.816570,-20.356212,-99.500000,minus
+56,3,0,22,PRIMARY,2.373970,0.197516,20.740638,-47.373054,-99.500000,minus
+57,3,0,22,PRIMARY,4.160891,0.456157,-14.663173,2.203900,-99.500000,minus
+58,1,0,22,PRIMARY,0.736228,0.205417,-11.346959,-18.180211,-99.500000,minus
+
+Explicit annihilation modes:
+1000 3
+
+Explicit hit creator processes (combined):
+358 PRIMARY
+
+Explicit annihilation_gammas.csv preview:
+event_id,source_event_id,track_id,parent_id,creator_process,vertex_time_ns,vertex_x_mm,vertex_y_mm,vertex_z_mm,kinetic_energy_MeV,dir_x,dir_y,dir_z
+0,1,3,0,PRIMARY,0.012184,0.000000,0.000000,0.000000,0.450374,-0.226910,-0.965609,0.126926
+0,1,2,0,PRIMARY,0.012184,0.000000,0.000000,0.000000,0.270521,0.626516,0.570779,-0.530744
+0,1,1,0,PRIMARY,0.012184,0.000000,0.000000,0.000000,0.301103,-0.223481,0.931501,0.286987
+1,2,3,0,PRIMARY,0.450026,0.000000,0.000000,0.000000,0.353904,-0.663124,-0.211404,0.718036
+1,2,2,0,PRIMARY,0.450026,0.000000,0.000000,0.000000,0.261032,-0.638310,0.292293,-0.712127
+1,2,1,0,PRIMARY,0.450026,0.000000,0.000000,0.000000,0.407062,0.985847,-0.003638,-0.167611
+2,3,3,0,PRIMARY,3.000619,0.000000,0.000000,0.000000,0.267305,-0.417981,-0.749394,0.513518
+2,3,2,0,PRIMARY,3.000619,0.000000,0.000000,0.000000,0.506682,0.299353,0.709729,-0.637708
+2,3,1,0,PRIMARY,3.000619,0.000000,0.000000,0.000000,0.248011,-0.161076,-0.642271,0.749361
+
+Explicit hit file line counts:
+  178 hits_plus.csv
+  182 hits_minus.csv
+  360 total
+
+Smoke test completed successfully.
+  - native Geant4 mode: PASS
+  - explicit provider mode: PASS

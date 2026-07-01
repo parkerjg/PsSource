@@ -48,6 +48,9 @@ public:
     // -------------------------------------------------------------------------
     // Explicit-provider controls
     // -------------------------------------------------------------------------
+    void SetThreeGammaModel(
+        PositroniumProvider::ThreeGammaModel model
+    );
     void SetFractions(double f_direct, double f_pps, double f_ops);
     void SetDelayMode(PositroniumProvider::DelayMode mode);
     void SetTauParaPsNs(double tau_ns);

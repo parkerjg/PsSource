@@ -1,0 +1,29 @@
+PsSource implementation checkpoint
+Created: 2026-07-01T15:29:50-04:00
+
+=== Host ===
+i8.red.uits.iu.edu
+Linux i8.red.uits.iu.edu 4.18.0-553.132.1.el8_10.x86_64 #1 SMP Wed Jun 10 07:35:57 EDT 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+=== Working directory ===
+/N/project/MIPHYS/PsSource
+
+=== Geant4 ===
+11.3.2
+/N/project/MIPHYS/QEPET/env
+
+=== Compiler ===
+c++ (conda-forge gcc 14.3.0-18) 14.3.0
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+
+=== Python ===
+Python 3.11.15
+
+=== Conda environment ===
+/N/project/MIPHYS/QEPET/env
+
+=== Git ===
+git version 2.43.7

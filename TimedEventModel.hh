@@ -1,22 +1,23 @@
 #ifndef TIMED_EVENT_MODEL_HH
 #define TIMED_EVENT_MODEL_HH
 
-#include <vector>
 #include <array>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 enum class PsClass : int {
     Direct2g = 0,
     ParaPs2g = 1,
-    OrthoPs2g = 2,   // delayed 2g surrogate branch
-    OrthoPs3g = 3    // reserved for phase 5
+    OrthoPs2g = 2,
+    OrthoPs3g = 3
 };
 
 enum class PhotonRole : int {
     Prompt = 0,
     Ann1   = 1,
     Ann2   = 2,
-    Ann3   = 3       // reserved for phase 5
+    Ann3   = 3
 };
 
 struct ParticleSpec {
@@ -40,10 +41,14 @@ struct VertexSpec {
 struct TimedEventSpec {
     std::vector<VertexSpec> vertices;
 
+    std::string physics_model_name;
+    std::string physics_model_version;
+    std::string physics_validation_status;
+
     uint64_t source_event_id;
 
-    int ps_class_id;              
-    int annihilation_mode;        
+    int ps_class_id;
+    int annihilation_mode;
     double delay_ns;
 
     bool has_prompt_gamma;
@@ -56,7 +61,7 @@ struct TimedEventSpec {
     int medium_id;
     double local_tau_ns;
 
-    bool qe_mode;                 
+    bool qe_mode;
 };
 
 #endif

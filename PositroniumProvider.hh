@@ -1,91 +1,83 @@
 #ifndef POSITRONIUM_PROVIDER_HH
 #define POSITRONIUM_PROVIDER_HH
 
+#include "ConfigurablePsModel.hh"
 #include "TimedEventModel.hh"
 
 #include <array>
-#include <utility>
 
 class PositroniumProvider {
 public:
-    enum class DelayMode { Fixed, Exponential };
+
+    using DelayMode = ConfigurablePsModel::DelayMode;
+    using ThreeGammaModel = ConfigurablePsModel::ThreeGammaModel;
 
     PositroniumProvider();
 
-    // Branching fractions across direct annihilation, para-Ps, and ortho-Ps.
-    // These must sum to 1.
-    void SetFractions(double f_direct, double f_pps, double f_ops);
+    void SetFractions(
+        double f_direct,
+        double f_pps,
+        double f_ops
+    );
 
-    // Fraction of ortho-Ps events that decay through the explicit 3-gamma branch.
-    // 0.0 => all o-Ps sampled as delayed 2g surrogate
-    // 1.0 => all o-Ps sampled as explicit 3g
-    void SetOrthoThreeGammaFraction(double f);
-
-    // Convenience switch.
-    void SetEnableThreeGamma(bool v);
+    void SetOrthoThreeGammaFraction(double fraction);
+    void SetEnableThreeGamma(bool enabled);
 
     void SetDelayMode(DelayMode mode);
-
-    // Characteristic lifetimes for explicit exponential sampling.
+    void SetTauDirectNs(double tau_ns);
     void SetTauParaPsNs(double tau_ns);
     void SetTauOpsNs(double tau_ns);
+    void SetFixedDelayNs(double fixed_delay_ns);
 
-    // Used only when DelayMode::Fixed for non-direct branches.
-    void SetFixedDelayNs(double fixed_ns);
+    void SetSourcePosition(
+        std::array<double, 3> position_mm
+    );
 
-    void SetSourcePosition(std::array<double, 3> pos);
+    void SetHasPromptGamma(bool enabled);
+    void SetPromptEnergyMeV(double energy_MeV);
 
-    // Optional source / metadata controls
-    void SetHasPromptGamma(bool has_prompt);
-    void SetPromptEnergyMeV(double e);
-    void SetEnablePositronRange(bool v);
-    void SetPositronRangeSigmaMm(double s);
-    void SetEnableQuantumEntanglement(bool v);
+    void SetEnablePositronRange(bool enabled);
+    void SetPositronRangeSigmaMm(double sigma_mm);
+
+    void SetEnableQuantumEntanglement(bool enabled);
+    void SetThreeGammaModel(ThreeGammaModel model);
 
     TimedEventSpec SampleNextEvent();
 
 private:
-    // Configuration
-    DelayMode m_delay_mode;
-
-    double m_f_direct;
-    double m_f_pps;
-    double m_f_ops;
-
-    bool   m_enable_three_gamma;
-    double m_ortho_three_gamma_fraction;
-
-    double m_tau_pps_ns;
-    double m_tau_ops_ns;
-    double m_fixed_delay_ns;
-
-    std::array<double, 3> m_source_pos;
-
-    bool   m_has_prompt;
-    double m_prompt_energy_MeV;
-
-    bool   m_enable_positron_range;
-    double m_positron_range_sigma_mm;
-
-    bool   m_enable_qe;  // metadata only at provider level
-
-    // Helpers
-    void ValidateFractions(double f_direct, double f_pps, double f_ops) const;
-    void ValidateUnitInterval(double x, const char* name) const;
-
-    PsClass SamplePsClass() const;
-    double SampleDelayNs(PsClass ps_class) const;
-
-    std::array<double, 3> SampleIsotropicDirection() const;
-    std::pair<std::array<double, 3>, std::array<double, 3>> SampleBackToBackDirections() const;
-
-    void SampleThreeGammaKinematics(
-        std::array<double, 3>& energies_mev,
-        std::array<std::array<double, 3>, 3>& directions
+    void ValidateFractionTriplet(
+        double f_direct,
+        double f_pps,
+        double f_ops
     ) const;
+
+    void ValidateUnitInterval(
+        double value,
+        const char* name
+    ) const;
+
+    std::array<double, 3>
+    SampleIsotropicDirection() const;
 
     double SampleGaussian() const;
     double SampleUniformOpen() const;
+
+private:
+    PsEnvironment m_environment;
+    ConfigurablePsModel m_physics_model;
+
+    std::array<double, 3> m_source_position_mm = {
+        0.0, 0.0, 0.0
+    };
+
+    bool m_has_prompt_gamma = false;
+    double m_prompt_energy_MeV = 1.274;
+
+    bool m_enable_positron_range = false;
+    double m_positron_range_sigma_mm = 1.0;
+
+    bool m_enable_quantum_entanglement = true;
+
 };
 
 #endif

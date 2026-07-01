@@ -1,0 +1,11 @@
+name: /N/project/MIPHYS/QEPET/env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - geant4
+  - compilers
+  - cxx-compiler
+  - iverilog
+  - yosys
+prefix: /N/project/MIPHYS/QEPET/env

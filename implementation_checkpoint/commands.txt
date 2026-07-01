@@ -1,0 +1,42 @@
+Full smoke suite
+================
+./build_smoke.sh
+
+Approximate 3-gamma backend
+===========================
+./ps_timing \
+    --generation-mode explicit \
+    --beam-on 1000 \
+    --f-direct 0 \
+    --f-pps 0 \
+    --f-ops 1 \
+    --ortho-3g-fraction 1 \
+    --three-gamma-model approximate \
+    --tau-ops-ns 3 \
+    --prompt off
+
+Geant4 Ore-Powell backend
+=========================
+./ps_timing \
+    --generation-mode explicit \
+    --beam-on 1000 \
+    --f-direct 0 \
+    --f-pps 0 \
+    --f-ops 1 \
+    --ortho-3g-fraction 1 \
+    --three-gamma-model ore-powell \
+    --tau-ops-ns 3 \
+    --prompt off
+
+Geant4 polarized Ore-Powell backend
+===================================
+./ps_timing \
+    --generation-mode explicit \
+    --beam-on 1000 \
+    --f-direct 0 \
+    --f-pps 0 \
+    --f-ops 1 \
+    --ortho-3g-fraction 1 \
+    --three-gamma-model ore-powell-polarized \
+    --tau-ops-ns 3 \
+    --prompt off

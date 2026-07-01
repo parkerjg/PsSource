@@ -44,6 +44,11 @@
 // -----------------------------------------------------------------------------
 enum class GenerationModeChoice { Native, Explicit };
 enum class DelayModeChoice { Exponential, Fixed };
+enum class ThreeGammaModelChoice {
+    Approximate,
+    OrePowell,
+    OrePowellPolarized
+};
 
 struct AppOptions {
     int beam_on = 10000;
@@ -67,6 +72,8 @@ struct AppOptions {
     double f_pps = 0.2;
     double f_ops = 0.5;
 
+    ThreeGammaModelChoice three_gamma_model =
+        ThreeGammaModelChoice::Approximate;
     double ortho_3g_fraction = 1.0;
     DelayModeChoice delay_mode = DelayModeChoice::Exponential;
     double tau_pps_ns = 0.125;
@@ -99,6 +106,24 @@ struct AppOptions {
 static const char* GenerationModeName(GenerationModeChoice m)
 {
     return (m == GenerationModeChoice::Native) ? "native" : "explicit";
+}
+
+static const char* ThreeGammaModelName(
+    ThreeGammaModelChoice model
+)
+{
+    switch (model) {
+        case ThreeGammaModelChoice::Approximate:
+            return "approximate";
+
+        case ThreeGammaModelChoice::OrePowell:
+            return "ore-powell";
+
+        case ThreeGammaModelChoice::OrePowellPolarized:
+            return "ore-powell-polarized";
+    }
+
+    return "unknown";
 }
 
 static const char* DelayModeName(DelayModeChoice m)
@@ -283,6 +308,9 @@ static void WriteRunConfigJson(const AppOptions& opt,
     out << "  \"beam_on_specified\": " << JsonBool(opt.beam_on_specified) << ",\n";
 
     out << "  \"enable_qe\": " << JsonBool(opt.enable_qe) << ",\n";
+    out << "  \"three_gamma_model\": \""
+        << ThreeGammaModelName(opt.three_gamma_model)
+        << "\",\n";
     out << "  \"enable_3gamma_onfly\": " << JsonBool(opt.enable_3gamma_onfly) << ",\n";
     out << "  \"positron_at_rest_model\": \"" << JsonEscape(opt.positron_at_rest_model) << "\",\n";
     out << "  \"world_material\": \"" << JsonEscape(opt.world_material) << "\",\n";
@@ -336,6 +364,9 @@ static void PrintUsage(const char* prog)
         << "  --beam-on N                  Number of events to run (default: 10000)\n"
         << "  --generation-mode MODE       native | explicit (default: native)\n"
         << "  --qe on|off                  Enable quantum entanglement metadata/physics switch (default: on)\n"
+	<< "  --three-gamma-model MODEL   approximate | ore-powell | ore-powell-polarized\n"
+	<< "                               Select explicit 3-gamma kinematic backend\n"
+	<< "                               (default: approximate)\n"
         << "  --3gamma-onfly on|off        Enable Geant4 3-gamma annihilation on fly (native mode) (default: off)\n"
         << "  --at-rest-model NAME         Positron at-rest model:\n"
         << "                               Simple | Allison | OrePawell | OrePowellPolar\n"
@@ -434,6 +465,29 @@ static DelayModeChoice ParseDelayMode(const std::string& text)
     throw std::runtime_error("Invalid --delay-mode: " + text + ". Allowed: exponential, fixed");
 }
 
+static ThreeGammaModelChoice ParseThreeGammaModel(
+    const std::string& text
+)
+{
+    if (text == "approximate") {
+        return ThreeGammaModelChoice::Approximate;
+    }
+
+    if (text == "ore-powell") {
+        return ThreeGammaModelChoice::OrePowell;
+    }
+
+    if (text == "ore-powell-polarized") {
+        return ThreeGammaModelChoice::OrePowellPolarized;
+    }
+
+    throw std::runtime_error(
+        "Invalid --three-gamma-model: " + text +
+        ". Allowed: approximate, ore-powell, "
+        "ore-powell-polarized"
+    );
+}
+
 static void ValidatePositronAtRestModel(const std::string& model)
 {
     if (model == "Simple") return;
@@ -485,6 +539,16 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
             if (i + 1 >= argc) throw std::runtime_error("Missing value for --qe");
             opt.enable_qe = ParseBool(argv[++i]);
         }
+	else if (arg == "--three-gamma-model") {
+	    if (i + 1 >= argc) {
+		throw std::runtime_error(
+		    "Missing value for --three-gamma-model"
+		);
+	    }
+
+	    opt.three_gamma_model =
+		ParseThreeGammaModel(argv[++i]);
+	}
         else if (arg == "--3gamma-onfly") {
             if (i + 1 >= argc) throw std::runtime_error("Missing value for --3gamma-onfly");
             opt.enable_3gamma_onfly = ParseBool(argv[++i]);
@@ -794,6 +858,10 @@ public:
         double dir_z = 0.0;
     };
 
+    std::string m_physics_model_name;
+    std::string m_physics_model_version;
+    std::string m_physics_validation_status;
+
     AnnihilationTruthEventAction()
     {
         m_summary_out.open("annihilation_summary.csv", std::ios::out | std::ios::trunc);
@@ -804,12 +872,14 @@ public:
                         "Failed to open annihilation_summary.csv");
         }
 
-        m_summary_out
-            << "event_id,source_event_id,qe_requested,has_prompt_gamma,"
-            << "source_x_mm,source_y_mm,source_z_mm,"
-            << "annihilation_found,annihilation_mode,n_annihilation_gammas,"
-            << "annihilation_time_ns,annihilation_x_mm,annihilation_y_mm,annihilation_z_mm,"
-            << "positron_range_mm\n";
+	m_summary_out
+	    << "event_id,source_event_id,qe_requested,has_prompt_gamma,"
+	    << "source_x_mm,source_y_mm,source_z_mm,"
+	    << "annihilation_found,annihilation_mode,n_annihilation_gammas,"
+	    << "annihilation_time_ns,annihilation_x_mm,annihilation_y_mm,"
+	    << "annihilation_z_mm,positron_range_mm,"
+	    << "physics_model_name,physics_model_version,"
+	    << "physics_validation_status\n";
 
         m_gamma_out.open("annihilation_gammas.csv", std::ios::out | std::ios::trunc);
         if (!m_gamma_out) {
@@ -843,6 +913,10 @@ public:
         m_source_y_mm = 0.0;
         m_source_z_mm = 0.0;
 
+	m_physics_model_name = "unknown";
+	m_physics_model_version = "unknown";
+	m_physics_validation_status = "unknown";
+
         m_declared_annihilation_mode = -1;
         m_declared_delay_ns = -1.0;
         m_declared_ann_x_mm = std::numeric_limits<double>::quiet_NaN();
@@ -860,6 +934,15 @@ public:
                 m_source_x_mm = truth->source_x_mm;
                 m_source_y_mm = truth->source_y_mm;
                 m_source_z_mm = truth->source_z_mm;
+
+		m_physics_model_name =
+		    truth->physics_model_name;
+
+		m_physics_model_version =
+		    truth->physics_model_version;
+
+		m_physics_validation_status =
+		    truth->physics_validation_status;
 
                 m_declared_annihilation_mode = truth->annihilation_mode;
                 m_declared_delay_ns = truth->delay_ns;
@@ -928,7 +1011,10 @@ public:
             << m_annihilation_x_mm << ","
             << m_annihilation_y_mm << ","
             << m_annihilation_z_mm << ","
-            << positron_range_mm
+            << positron_range_mm << ","
+            << m_physics_model_name << ","
+            << m_physics_model_version << ","
+            << m_physics_validation_status
             << "\n";
 
         for (const auto& gamma_rec : m_annihilation_gammas) {
@@ -1208,6 +1294,29 @@ public:
             gen->SetEnableThreeGamma(m_opt.ortho_3g_fraction > 0.0);
             gen->SetOrthoThreeGammaFraction(m_opt.ortho_3g_fraction);
 
+            switch (m_opt.three_gamma_model) {
+                case ThreeGammaModelChoice::Approximate:
+                gen->SetThreeGammaModel(
+                    PositroniumProvider::ThreeGammaModel::
+                    ApproximatePhaseSpace
+                );
+                break;
+
+                case ThreeGammaModelChoice::OrePowell:
+                gen->SetThreeGammaModel(
+                    PositroniumProvider::ThreeGammaModel::
+                    Geant4OrePowell
+                );
+                break;
+
+                case ThreeGammaModelChoice::OrePowellPolarized:
+                gen->SetThreeGammaModel(
+                    PositroniumProvider::ThreeGammaModel::
+                    Geant4PolarizedOrePowell
+                );
+                break;
+            }
+
             if (m_opt.delay_mode == DelayModeChoice::Exponential) {
                 gen->SetDelayMode(PositroniumProvider::DelayMode::Exponential);
             } else {
@@ -1331,6 +1440,7 @@ int main(int argc, char** argv)
            << "Generation mode            : " << GenerationModeName(opt.generation_mode) << "\n"
            << "Physics list               : FTFP_BERT + G4EmLivermorePolarizedPhysics\n"
            << "Quantum entanglement       : " << (opt.enable_qe ? "ON" : "OFF") << "\n"
+           << "3-gamma model              : " << ThreeGammaModelName(opt.three_gamma_model) << "\n"
            << "3 gamma on fly             : " << (opt.enable_3gamma_onfly ? "ON" : "OFF") << "\n"
            << "At-rest model              : " << opt.positron_at_rest_model << "\n"
            << "World material             : " << opt.world_material << "\n"
