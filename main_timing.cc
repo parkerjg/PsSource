@@ -1031,7 +1031,7 @@ public:
                 << gamma_rec.track_id << ","
                 << gamma_rec.parent_id << ","
                 << gamma_rec.creator_process << ","
-                << std::fixed << std::setprecision(6)
+                << std::fixed << std::setprecision(12)
                 << gamma_rec.vertex_time_ns << ","
                 << gamma_rec.vertex_x_mm << ","
                 << gamma_rec.vertex_y_mm << ","

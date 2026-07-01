@@ -44,6 +44,8 @@ generated_outputs_previous/
 polarization_test_approximate/
 polarization_test_unpolarized/
 polarization_test_polarized/
+local_reference/
+ore_powell_reference_run/
 
 # Generated comparison products
 three_gamma_comparison_*.csv
