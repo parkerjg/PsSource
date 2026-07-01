@@ -53,6 +53,9 @@ three_gamma_comparison_*.png
 !implementation_checkpoint/logs/final_git_smoke.log
 time.txt
 
+# Automated regression outputs
+regression_runs/
+
 # Local environments and secrets
 .env
 .venv/
