@@ -405,6 +405,14 @@ void PositroniumGenerator::AddExplicitVertices(const TimedEventSpec& spec,
             g4_particle->SetMomentumDirection(dir);
             g4_particle->SetKineticEnergy(part_spec.kinetic_energy_MeV * MeV);
 
+            if (part_spec.polarization_valid) {
+                g4_particle->SetPolarization(
+                    part_spec.polarization[0],
+                    part_spec.polarization[1],
+                    part_spec.polarization[2]
+                );
+            }
+
             g4_vertex->SetPrimary(g4_particle);
         }
 

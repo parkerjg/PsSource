@@ -380,6 +380,12 @@ TimedEventSpec PositroniumProvider::SampleNextEvent()
         particle.direction =
             model_photon.direction;
 
+        particle.polarization =
+            model_photon.polarization;
+
+        particle.polarization_valid =
+            model_photon.polarization_valid;
+
         switch (index) {
             case 0:
                 particle.photon_role =

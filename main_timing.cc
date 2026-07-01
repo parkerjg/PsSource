@@ -856,6 +856,12 @@ public:
         double dir_x = 0.0;
         double dir_y = 0.0;
         double dir_z = 0.0;
+
+	double pol_x = 0.0;
+	double pol_y = 0.0;
+	double pol_z = 0.0;
+	bool polarization_valid = false;
+
     };
 
     std::string m_physics_model_name;
@@ -892,7 +898,8 @@ public:
         m_gamma_out
             << "event_id,source_event_id,track_id,parent_id,creator_process,"
             << "vertex_time_ns,vertex_x_mm,vertex_y_mm,vertex_z_mm,"
-            << "kinetic_energy_MeV,dir_x,dir_y,dir_z\n";
+            << "kinetic_energy_MeV,dir_x,dir_y,dir_z,"
+            << "pol_x,pol_y,pol_z,polarization_valid\n";
     }
 
     ~AnnihilationTruthEventAction() override
@@ -1030,10 +1037,14 @@ public:
                 << gamma_rec.vertex_y_mm << ","
                 << gamma_rec.vertex_z_mm << ","
                 << gamma_rec.kinetic_energy_mev << ","
-                << gamma_rec.dir_x << ","
-                << gamma_rec.dir_y << ","
-                << gamma_rec.dir_z
-                << "\n";
+		<< gamma_rec.dir_x << ","
+		<< gamma_rec.dir_y << ","
+		<< gamma_rec.dir_z << ","
+		<< gamma_rec.pol_x << ","
+		<< gamma_rec.pol_y << ","
+		<< gamma_rec.pol_z << ","
+		<< (gamma_rec.polarization_valid ? 1 : 0)
+		<< "\n";
         }
     }
 
@@ -1056,6 +1067,19 @@ public:
         rec.dir_x = dir.x();
         rec.dir_y = dir.y();
         rec.dir_z = dir.z();
+
+	const auto& polarization =
+	    track->GetPolarization();
+
+	rec.pol_x = polarization.x();
+	rec.pol_y = polarization.y();
+	rec.pol_z = polarization.z();
+
+	const double polarization_magnitude_squared =
+	    polarization.mag2();
+
+	rec.polarization_valid =
+	    polarization_magnitude_squared > 0.0;
 
         if (!m_annihilation_found) {
             m_annihilation_found = true;

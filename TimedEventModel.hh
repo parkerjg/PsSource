@@ -25,6 +25,12 @@ struct ParticleSpec {
     double kinetic_energy_MeV;
     std::array<double, 3> direction;
 
+    std::array<double, 3> polarization = {
+        0.0, 0.0, 0.0
+    };
+
+    bool polarization_valid = false;
+
     int photon_role;
     int parent_vertex_id;
     int parent_ps_class;

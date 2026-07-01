@@ -41,6 +41,9 @@ release_freeze/
 FROZEN_EXPERIMENT_*/
 implementation_checkpoint/runs/
 generated_outputs_previous/
+polarization_test_approximate/
+polarization_test_unpolarized/
+polarization_test_polarized/
 
 # Generated comparison products
 three_gamma_comparison_*.csv

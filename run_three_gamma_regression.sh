@@ -18,6 +18,7 @@ fi
 PS_TIMING="${ROOT_DIR}/ps_timing"
 OUTPUT_VALIDATOR="${ROOT_DIR}/validate_positronium_outputs.py"
 ISOTROPY_VALIDATOR="${ROOT_DIR}/validate_isotropy.py"
+POLARIZATION_VALIDATOR="${ROOT_DIR}/validate_polarization.py"
 MODEL_COMPARISON="${ROOT_DIR}/compare_three_gamma_models.py"
 
 fail()
@@ -197,6 +198,7 @@ run_backend()
     local expected_name="$3"
     local expected_version="$4"
     local expected_status="$5"
+    local polarization_expectation="$6"
 
     local run_dir="${RUN_ROOT}/${label}"
 
@@ -230,6 +232,12 @@ run_backend()
 
         python "${ISOTROPY_VALIDATOR}" \
             > isotropy.log 2>&1
+
+	python "${POLARIZATION_VALIDATOR}" \
+	    annihilation_gammas.csv \
+	    "${polarization_expectation}" \
+	    > polarization.log 2>&1
+
     )
 
     require_file "${run_dir}/run_config.json"
@@ -237,6 +245,7 @@ run_backend()
     require_file "${run_dir}/annihilation_gammas.csv"
     require_file "${run_dir}/validation.log"
     require_file "${run_dir}/isotropy.log"
+    require_file "${run_dir}/polarization.log"
 
     check_csv_header \
         "${run_dir}/annihilation_summary.csv"
@@ -261,6 +270,9 @@ run_backend()
 
     grep -Fq "PASS" "${run_dir}/isotropy.log" ||
         fail "Isotropy validator did not report PASS for ${label}"
+
+    grep -Fq "PASS" "${run_dir}/polarization.log" ||
+        fail "Polarization validator did not report PASS for ${label}"
 
     echo "${label}: PASS"
 }
@@ -333,6 +345,7 @@ echo "Event count   : ${EVENT_COUNT}"
 require_file "${PS_TIMING}"
 require_file "${OUTPUT_VALIDATOR}"
 require_file "${ISOTROPY_VALIDATOR}"
+require_file "${POLARIZATION_VALIDATOR}"
 require_file "${MODEL_COMPARISON}"
 
 rm -rf "${RUN_ROOT}"
@@ -343,21 +356,24 @@ run_backend \
     "approximate" \
     "ConfigurablePsModel/ApproximatePhaseSpace" \
     "1.0" \
-    "approximate-controlled-source-model"
+    "approximate-controlled-source-model" \
+    "--expect-unpolarized"
 
 run_backend \
     "ore_powell" \
     "ore-powell" \
     "ConfigurablePsModel/Geant4OrePowell" \
     "Geant4-11.3.2" \
-    "geant4-native-ore-powell"
+    "geant4-native-ore-powell" \
+    "--expect-polarized"
 
 run_backend \
     "ore_powell_polarized" \
     "ore-powell-polarized" \
     "ConfigurablePsModel/Geant4PolarizedOrePowell" \
     "Geant4-11.3.2" \
-    "geant4-native-ore-powell"
+    "geant4-native-ore-powell" \
+    "--expect-polarized"
 
 test_invalid_model
 run_model_comparison
