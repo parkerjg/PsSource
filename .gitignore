@@ -68,3 +68,8 @@ regression_runs/
 # Editor / OS
 *~
 .DS_Store
+
+# Full scientific benchmark outputs
+ore_powell_benchmark_run/
+ore_powell_benchmark_test/
+ore_powell_benchmark_*/

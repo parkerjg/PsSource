@@ -525,6 +525,18 @@ def main():
     observed_included = observed[included]
     expected_included = expected_counts[included]
 
+    included_bin_count = int(included.sum())
+
+    if included_bin_count == 0:
+        print(
+            "ERROR: no phase-space bins met "
+            f"--minimum-expected-count={args.minimum_expected_count}. "
+            "Increase the event count, reduce --bins, or lower "
+            "--minimum-expected-count.",
+            file=sys.stderr,
+        )
+        return 1
+
     chi_square = np.sum(
         (
             observed_included
@@ -533,9 +545,7 @@ def main():
         / expected_included
     )
 
-    degrees_of_freedom = (
-        int(included.sum()) - 1
-    )
+    degrees_of_freedom = included_bin_count - 1
 
     if degrees_of_freedom > 0:
         chi_square_z = (
