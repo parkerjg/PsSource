@@ -79,3 +79,9 @@ ore_powell_polarized_benchmark_run/
 ore_powell_polarized_benchmark_test/
 ore_powell_polarized_benchmark_*/
 ore_powell_polarized_reference_run/
+
+# Native Geant4 reference build product and acquisitions
+reference/native_geant4_ore_powell/native_geant4_ore_powell
+native_geant4_ore_powell_run/
+native_geant4_ore_powell_test/
+native_geant4_ore_powell_*/
