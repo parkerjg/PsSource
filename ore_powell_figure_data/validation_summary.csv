@@ -1,0 +1,20 @@
+metric,value
+Validation status,PASS
+Events analyzed,100000
+Multiplicity failures,0
+Phase-space failures,0
+Maximum normalized energy-sum residual,1.5655805185588179e-07
+Maximum direction norm error,8.311129562343922e-13
+Maximum opening-angle cosine error,4.1457948185552596e-10
+99th-percentile opening-angle cosine error,1.2467952226202746e-11
+99.9th-percentile opening-angle cosine error,3.767643597108115e-11
+Opening-angle pairs tested,299998
+Opening-angle pairs skipped for soft photons,2
+Chi-square,1339.0231135620254
+Degrees of freedom,1274
+Chi-square z score,1.2881547804296731
+Maximum standardized residual,3.775712650442589
+Maximum marginal CDF difference,0.003144923132229027
+Marginal CDF tolerance,0.018973665961010275
+Grid bins per axis,50
+Integration subdivisions per axis,12
