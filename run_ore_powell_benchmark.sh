@@ -24,6 +24,7 @@ EXECUTABLE="${REPO_ROOT}/ps_timing"
 OUTPUT_VALIDATOR="${REPO_ROOT}/validate_positronium_outputs.py"
 REFERENCE_VALIDATOR="${REPO_ROOT}/validate_ore_powell_reference.py"
 FIGURE_EXPORTER="${REPO_ROOT}/export_ore_powell_figure_data.py"
+GEOMETRY_VALIDATOR="${REPO_ROOT}/validate_three_gamma_geometry.py"
 
 fail() {
     echo "ERROR: $*" >&2
@@ -42,6 +43,7 @@ require_executable "${EXECUTABLE}"
 require_file "${OUTPUT_VALIDATOR}"
 require_file "${REFERENCE_VALIDATOR}"
 require_file "${FIGURE_EXPORTER}"
+require_file "${GEOMETRY_VALIDATOR}"
 
 [[ "${EVENTS}" =~ ^[1-9][0-9]*$ ]] \
     || fail "EVENTS must be a positive integer"
@@ -121,7 +123,7 @@ chmod +x "${OUTPUT_PATH}/command.sh"
 # remain isolated.
 # -------------------------------------------------------------------------
 
-echo "[1/5] Generating ${EVENTS} ordinary Ore-Powell events"
+echo "[1/6] Generating ${EVENTS} ordinary Ore-Powell events"
 
 (
     cd "${OUTPUT_PATH}"
@@ -151,7 +153,7 @@ done
 # Generic output validation.
 # -------------------------------------------------------------------------
 
-echo "[2/5] Running general output and closure validation"
+echo "[2/6] Running general output and closure validation"
 
 python "${OUTPUT_VALIDATOR}" \
     --summary "${OUTPUT_PATH}/annihilation_summary.csv" \
@@ -231,7 +233,7 @@ PY
 # Independent analytic Ore-Powell validation.
 # -------------------------------------------------------------------------
 
-echo "[3/5] Running independent analytic Ore-Powell validation"
+echo "[3/6] Running independent analytic Ore-Powell validation"
 
 python "${REFERENCE_VALIDATOR}" \
     "${OUTPUT_PATH}/annihilation_gammas.csv" \
@@ -253,7 +255,18 @@ require_file "${OUTPUT_PATH}/ore_powell_reference_grid.csv"
 # Export publication/Excel data.
 # -------------------------------------------------------------------------
 
-echo "[4/5] Exporting Excel-ready validation data"
+echo "[4/6] Running extended three-gamma geometry validation"
+
+python "${GEOMETRY_VALIDATOR}" \
+    "${OUTPUT_PATH}/annihilation_gammas.csv" \
+    --output-prefix "${OUTPUT_PATH}/three_gamma_geometry" \
+    > "${OUTPUT_PATH}/three_gamma_geometry.log" 2>&1
+
+require_file "${OUTPUT_PATH}/three_gamma_geometry_summary.json"
+require_file "${OUTPUT_PATH}/three_gamma_geometry_metrics.csv"
+require_file "${OUTPUT_PATH}/three_gamma_geometry_histograms.csv"
+
+echo "[5/6] Exporting Excel-ready validation data"
 
 python "${FIGURE_EXPORTER}" \
     --gammas "${OUTPUT_PATH}/annihilation_gammas.csv" \
@@ -266,7 +279,7 @@ python "${FIGURE_EXPORTER}" \
 # Final cross-check and manifest.
 # -------------------------------------------------------------------------
 
-echo "[5/5] Verifying benchmark artifacts"
+echo "[6/6] Verifying benchmark artifacts"
 
 python - "${OUTPUT_PATH}" "${EVENTS}" "${SEED1}" "${SEED2}" <<'PY'
 import csv
@@ -286,6 +299,9 @@ required = [
     root / "output_validation.json",
     root / "ore_powell_reference_summary.json",
     root / "ore_powell_reference_grid.csv",
+    root / "three_gamma_geometry_summary.json",
+    root / "three_gamma_geometry_metrics.csv",
+    root / "three_gamma_geometry_histograms.csv",
     root / "figure_data" / "phase_space_long.csv",
     root / "figure_data" / "observed_density_matrix.csv",
     root / "figure_data" / "expected_density_matrix.csv",
@@ -356,6 +372,19 @@ if int(reference.get("multiplicity_failures", -1)) != 0:
 if int(reference.get("phase_space_failures", -1)) != 0:
     raise SystemExit("Phase-space failures were nonzero")
 
+with (root / "three_gamma_geometry_summary.json").open() as handle:
+    geometry = json.load(handle)
+
+if geometry.get("status") != "PASS":
+    raise SystemExit(
+        "Three-gamma geometry validator did not report PASS"
+    )
+
+if int(geometry.get("events_analyzed", -1)) != expected_events:
+    raise SystemExit(
+        "Geometry validator event count does not match requested count"
+    )
+
 with (
     root / "figure_data" / "single_photon_spectrum.csv"
 ).open() as handle:
@@ -385,6 +414,29 @@ manifest = {
     ),
     "maximum_standardized_residual": (
         reference["maximum_standardized_residual"]
+    ),
+    "geometry_validation_status": geometry["status"],
+    "photon_cos_theta_z_score": (
+        geometry["photon_cos_theta"]["z_score"]
+    ),
+    "photon_phi_z_score": (
+        geometry["photon_phi"]["z_score"]
+    ),
+    "plane_normal_cos_theta_z_score": (
+        geometry["plane_normal_cos_theta"]["z_score"]
+    ),
+    "plane_normal_phi_z_score": (
+        geometry["plane_normal_phi"]["z_score"]
+    ),
+    "maximum_cartesian_axis_mean_difference": (
+        geometry["cartesian_axis_statistics"][
+            "maximum_mean_difference"
+        ]
+    ),
+    "maximum_coplanarity_error": (
+        geometry["coplanarity"][
+            "maximum_absolute_scalar_triple_product"
+        ]
     ),
 }
 
