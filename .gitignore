@@ -89,3 +89,7 @@ native_geant4_ore_powell_*/
 # GATE Ore-Powell benchmark acquisitions
 gate_ore_powell_run/
 gate_ore_powell_test/
+
+# Cross-framework Ore-Powell comparison outputs
+cross_framework_ore_powell_run/
+cross_framework_ore_powell_test/
