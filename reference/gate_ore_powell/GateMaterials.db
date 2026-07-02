@@ -1,0 +1,42 @@
+[Elements]
+Hydrogen: S= H ; Z= 1. ; A= 1.008 g/mole
+Carbon: S= C ; Z= 6. ; A= 12.01 g/mole
+Nitrogen: S= N ; Z= 7. ; A= 14.01 g/mole
+Oxygen: S= O ; Z= 8. ; A= 16.00 g/mole
+Silicon: S= Si ; Z= 14. ; A= 28.09 g/mole
+Lutetium: S= Lu ; Z= 71. ; A= 174.97 g/mole
+Lead: S= Pb ; Z= 82. ; A= 207.2 g/mole
+Yttrium: S= Y ; Z= 39. ; A= 88.91 g/mole
+
+[Materials]
+Air: d=0.0012 g/cm3 ; n=2
++el: name=Nitrogen ; f=0.7
++el: name=Oxygen ; f=0.3
+
+Water: d=1.0 g/cm3 ; n=2
++el: name=Hydrogen ; n=2
++el: name=Oxygen ; n=1
+
+LSO: d=7.40 g/cm3 ; n=3
++el: name=Lutetium ; n=2
++el: name=Silicon ; n=1
++el: name=Oxygen ; n=5
+
+# Solid Silicon (for the SiPMs)
+Silicon: d=2.33 g/cm3 ; n=1
++el: name=Silicon ; n=1
+
+# LYSO Scintillator Crystal (for the SOTA baseline)
+LYSO: d=7.1 g/cm3 ; n=4
++el: name=Lutetium ; f=0.714
++el: name=Yttrium ; f=0.040
++el: name=Silicon ; f=0.064
++el: name=Oxygen ; f=0.182
+
+LeadMaterial: d=11.34 g/cm3 ; n=1
++el: name=Lead ; n=1
+
+# BCF-10 / Polyvinyltoluene (PVT) Plastic Scintillator
+BCF10: d=1.032 g/cm3 ; n=2
++el: name=Carbon ; n=9
++el: name=Hydrogen ; n=10

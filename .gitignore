@@ -85,3 +85,7 @@ reference/native_geant4_ore_powell/native_geant4_ore_powell
 native_geant4_ore_powell_run/
 native_geant4_ore_powell_test/
 native_geant4_ore_powell_*/
+
+# GATE Ore-Powell benchmark acquisitions
+gate_ore_powell_run/
+gate_ore_powell_test/

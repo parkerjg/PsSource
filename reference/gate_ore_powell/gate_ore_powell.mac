@@ -1,0 +1,76 @@
+
+/gate/random/setEngineName MersenneTwister
+/gate/random/setEngineSeed 123456
+
+/vis/disable
+/tracking/storeTrajectory 0
+
+# ==========================================================
+# 1. MATERIALS
+# ==========================================================
+
+/gate/geometry/setMaterialDatabase /job/GateMaterials.db
+
+# ==========================================================
+# 2. GEOMETRY
+# ==========================================================
+
+/gate/world/geometry/setXLength 20. cm
+/gate/world/geometry/setYLength 20. cm
+/gate/world/geometry/setZLength 20. cm
+/gate/world/setMaterial G4_Galactic
+
+/gate/world/daughters/name phspShell
+/gate/world/daughters/insert sphere
+/gate/phspShell/geometry/setRmin 49.0 mm
+/gate/phspShell/geometry/setRmax 50.0 mm
+/gate/phspShell/setMaterial G4_Galactic
+
+# ==========================================================
+# 3. PHYSICS
+# ==========================================================
+
+/gate/physics/addPhysicsList emlivermore_polar
+
+# ==========================================================
+# 4. PHASE-SPACE ACTOR
+# ==========================================================
+
+/gate/actor/addActor PhaseSpaceActor phsp
+/gate/actor/phsp/attachTo phspShell
+/gate/actor/phsp/save /job/gate_ore_powell.root
+/gate/actor/phsp/enableEkine true
+/gate/actor/phsp/enableXPosition true
+/gate/actor/phsp/enableYPosition true
+/gate/actor/phsp/enableZPosition true
+/gate/actor/phsp/enableXDirection true
+/gate/actor/phsp/enableYDirection true
+/gate/actor/phsp/enableZDirection true
+/gate/actor/phsp/enableParticleName true
+/gate/actor/phsp/enableWeight true
+
+# ==========================================================
+# 5. INITIALIZE
+# ==========================================================
+
+/gate/run/initialize
+
+# ==========================================================
+# 6. ORTHOPOSITRONIUM SOURCE
+# ==========================================================
+
+/gate/source/addSource PsSource Extended
+/gate/source/PsSource/setType oPs
+/gate/source/PsSource/setActivity 10000000. becquerel
+
+/gate/source/PsSource/gps/pos/type Point
+/gate/source/PsSource/gps/pos/centre 0. 0. 0. mm
+
+
+# ==========================================================
+# 7. ACQUISITION
+# ==========================================================
+
+/gate/application/setTimeStart 0. s
+/gate/application/setTimeStop .01 s
+/gate/application/startDAQ
