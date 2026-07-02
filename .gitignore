@@ -73,3 +73,9 @@ regression_runs/
 ore_powell_benchmark_run/
 ore_powell_benchmark_test/
 ore_powell_benchmark_*/
+
+# Polarized Ore-Powell benchmark outputs
+ore_powell_polarized_benchmark_run/
+ore_powell_polarized_benchmark_test/
+ore_powell_polarized_benchmark_*/
+ore_powell_polarized_reference_run/
