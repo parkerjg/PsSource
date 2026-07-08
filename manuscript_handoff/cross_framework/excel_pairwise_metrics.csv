@@ -1,0 +1,4 @@
+comparison,unordered_marginal_KS,largest_ordered_energy_KS,unordered_histogram_L1
+PsSource vs Native Geant4,0.0018433333,0.0042000000,0.0183333333
+PsSource vs GATE,0.0018018449,0.0045203474,0.0175101025
+Native Geant4 vs GATE,0.0014153039,0.0043150507,0.0144024620

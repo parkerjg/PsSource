@@ -1,0 +1,24 @@
+{
+  "energy_tolerance_MeV": 5e-06,
+  "events_written": 100168,
+  "failures": [],
+  "filtered_primary_gamma_records": 300504,
+  "filters": {
+    "parent_id": 0,
+    "particle_name": "gamma",
+    "radial_dot_direction": "> 0"
+  },
+  "input_root": "/N/project/MIPHYS/PsSource_git/gate_ore_powell_run/gate_ore_powell.root",
+  "maximum_direction_norm_error": 4.937662134718579e-08,
+  "maximum_energy_sum_error_MeV": 1.4274396886726493e-07,
+  "maximum_momentum_error_MeV_over_c": 7.602741270109032e-08,
+  "momentum_tolerance_MeV_over_c": 5e-06,
+  "multiplicity_distribution": {
+    "3": 100168
+  },
+  "output_csv": "/N/project/MIPHYS/PsSource_git/gate_ore_powell_run/annihilation_gammas.csv",
+  "photons_written": 300504,
+  "raw_phase_space_records": 300504,
+  "selected_tree": "PhaseSpace;2",
+  "status": "PASS"
+}

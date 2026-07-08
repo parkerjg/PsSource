@@ -1,0 +1,4 @@
+model,input_csv,event_count,photon_count,mean_unordered_x,std_unordered_x,mean_low_x,mean_middle_x,mean_high_x
+PsSource,ore_powell_benchmark_run/annihilation_gammas.csv,100000,300000,0.666666614481,0.236245752462,0.3887058568,0.719573241567,0.891720745077
+Native Geant4,native_geant4_ore_powell_run/annihilation_gammas.csv,100000,300000,0.666666614481,0.236263437337,0.388734528389,0.719551356555,0.8917139585
+GATE,gate_ore_powell_run/annihilation_gammas.csv,100168,300504,0.666666612721,0.23619572274,0.388833675316,0.719786447419,0.891379715429

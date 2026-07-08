@@ -1,0 +1,19 @@
+{
+  "chi_square": 1252.0666460366513,
+  "chi_square_z_score": -0.43451556240524825,
+  "degrees_of_freedom": 1274,
+  "events": 100168,
+  "framework": "GATE",
+  "gate_version": "9.4.1",
+  "geant4_version": "11.3.0",
+  "maximum_cartesian_axis_mean_difference": 0.0007241632209856186,
+  "maximum_marginal_cdf_difference": 0.002652427965484483,
+  "maximum_standardized_residual": 3.1468592357013208,
+  "photon_cos_theta_z_score": 0.4714712553913816,
+  "photon_phi_z_score": 0.22965901053342092,
+  "photons": 300504,
+  "physics_backend": "GATE Extended oPs",
+  "plane_normal_cos_theta_z_score": -0.8532398475687749,
+  "plane_normal_phi_z_score": -0.40615130658402343,
+  "status": "PASS"
+}

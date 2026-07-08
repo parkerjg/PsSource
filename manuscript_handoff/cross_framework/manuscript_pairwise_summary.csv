@@ -1,0 +1,4 @@
+comparison,unordered_marginal_ks,largest_ordered_energy_ks,unordered_histogram_l1
+pssource vs native_geant4,0.0018433333,0.0042000000,0.0183333333
+pssource vs gate,0.0018018449,0.0045203474,0.0175101025
+native_geant4 vs gate,0.0014153039,0.0043150507,0.0144024620

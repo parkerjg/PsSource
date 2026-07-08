@@ -1,0 +1,77 @@
+{
+  "axis_asymmetry_tolerance": 0.01,
+  "axis_mean_tolerance": 0.01,
+  "cartesian_axis_statistics": {
+    "maximum_mean_difference": 0.0007241632209856186,
+    "mean_abs_x": 0.4998828351932893,
+    "mean_abs_y": 0.4993482561497749,
+    "mean_abs_z": 0.5000724193707605
+  },
+  "coplanarity": {
+    "maximum_absolute_scalar_triple_product": 7.629308879341863e-08,
+    "mean_absolute_scalar_triple_product": 9.893924220958263e-09,
+    "p999_absolute_scalar_triple_product": 5.549800247817557e-08,
+    "p99_absolute_scalar_triple_product": 4.067490189307076e-08
+  },
+  "coplanarity_tolerance": 1e-06,
+  "energy_closure": {
+    "maximum_absolute_error_MeV": 1.4274396886726493e-07,
+    "mean_absolute_error_MeV": 8.26979156092136e-08,
+    "p99_absolute_error_MeV": 1.2039222707649344e-07
+  },
+  "energy_sum_tolerance_MeV": 5e-06,
+  "events_analyzed": 100168,
+  "events_read": 100168,
+  "failures": [],
+  "input_csv": "/N/project/MIPHYS/PsSource_git/gate_ore_powell_run/annihilation_gammas.csv",
+  "momentum_closure": {
+    "maximum_error_MeV_over_c": 6.471684242225645e-08,
+    "mean_error_MeV_over_c": 1.6150010645045516e-08,
+    "p99_error_MeV_over_c": 3.7525053107975664e-08
+  },
+  "momentum_tolerance_MeV_over_c": 5e-06,
+  "multiplicity_failures": 0,
+  "opening_angles_degrees": {
+    "low_high": {
+      "maximum": 179.75880561894138,
+      "mean": 131.8215475923742,
+      "minimum": 90.50762964747035,
+      "std": 17.887258362589176
+    },
+    "low_middle": {
+      "maximum": 119.77799847120521,
+      "mean": 72.51944600562099,
+      "minimum": 0.3725693966119265,
+      "std": 26.14523151922531
+    },
+    "middle_high": {
+      "maximum": 179.9784806817801,
+      "mean": 155.65900640200476,
+      "minimum": 120.2452356318618,
+      "std": 13.653807767422771
+    }
+  },
+  "photon_cos_theta": {
+    "chi_square": 21.906344008731995,
+    "degrees_of_freedom": 19,
+    "z_score": 0.4714712553913816
+  },
+  "photon_phi": {
+    "chi_square": 24.557623193035703,
+    "degrees_of_freedom": 23,
+    "z_score": 0.22965901053342092
+  },
+  "plane_normal_cos_theta": {
+    "chi_square": 13.74027633575593,
+    "degrees_of_freedom": 19,
+    "z_score": -0.8532398475687749
+  },
+  "plane_normal_failures": 0,
+  "plane_normal_phi": {
+    "chi_square": 20.245347815669675,
+    "degrees_of_freedom": 23,
+    "z_score": -0.40615130658402343
+  },
+  "status": "PASS",
+  "uniformity_z_limit": 6.0
+}

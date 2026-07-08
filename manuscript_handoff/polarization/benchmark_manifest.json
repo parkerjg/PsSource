@@ -1,0 +1,20 @@
+{
+  "events": 100000,
+  "generation_mode": "explicit",
+  "maximum_abs_direction_dot_polarization": 1.4977672808633668e-12,
+  "maximum_direction_norm_error": 8.387734951043058e-13,
+  "maximum_polarization_norm_error": 8.348877145181177e-13,
+  "mean_abs_pairwise_polarization_dot": 0.599233220302159,
+  "mean_abs_polarization_dot_global_z": 0.4996006297048509,
+  "mean_abs_polarization_dot_plane_normal": 0.7010700651999098,
+  "mean_pairwise_polarization_dot": 0.5080859976456439,
+  "ordinary_baseline_directory": "/N/project/MIPHYS/PsSource_git/ore_powell_benchmark_run",
+  "ordinary_polarized_energy_cdf_difference": 0.00168333333333337,
+  "ordinary_polarized_energy_cdf_tolerance": 0.02,
+  "photon_count": 300000,
+  "physics_backend": "ore-powell-polarized",
+  "polarized_validation_status": "PASS",
+  "seed1": 161803,
+  "seed2": 141421,
+  "status": "PASS"
+}

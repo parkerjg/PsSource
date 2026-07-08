@@ -1,0 +1,103 @@
+{
+  "acceptance_thresholds": {
+    "maximum_ordered_energy_ks": 0.01,
+    "maximum_unordered_histogram_l1": 0.05,
+    "maximum_unordered_marginal_ks": 0.01
+  },
+  "comparison": "Ordinary Ore-Powell three-photon decay across PsSource, native Geant4, and GATE",
+  "failures": [],
+  "maximum_observed_values": {
+    "ordered_energy_ks": 0.004520347416340553,
+    "unordered_histogram_l1": 0.018333333333333316,
+    "unordered_marginal_ks": 0.001843333333333308
+  },
+  "models": {
+    "gate": {
+      "event_count": 100168,
+      "input_path": "/N/project/MIPHYS/PsSource_git/gate_ore_powell_run/annihilation_gammas.csv",
+      "maximum_absolute_energy_error_MeV": 1.4274396886726493e-07,
+      "maximum_x": 0.9999978117791469,
+      "mean_high_x": 0.8913797154288905,
+      "mean_low_x": 0.38883367531624186,
+      "mean_mid_x": 0.7197864474190903,
+      "mean_x": 0.6666666127213977,
+      "median_x": 0.7052946084310852,
+      "minimum_x": 0.001575333321580656,
+      "photon_count": 300504,
+      "q05_x": 0.22496432581979478,
+      "q95_x": 0.9768320107352386,
+      "std_x": 0.23619611574018493,
+      "support_violation_count": 0
+    },
+    "native_geant4": {
+      "event_count": 100000,
+      "input_path": "/N/project/MIPHYS/PsSource_git/native_geant4_ore_powell_run/annihilation_gammas.csv",
+      "maximum_absolute_energy_error_MeV": 8.000000017993614e-08,
+      "maximum_x": 0.9999979542747638,
+      "mean_high_x": 0.8917139585003429,
+      "mean_low_x": 0.3887345283887791,
+      "mean_mid_x": 0.7195513565547704,
+      "mean_x": 0.6666666144813044,
+      "median_x": 0.7050516564736299,
+      "minimum_x": 0.0016226473134750444,
+      "photon_count": 300000,
+      "q05_x": 0.22527714160197804,
+      "q95_x": 0.9769234028707567,
+      "std_x": 0.23626383111070526,
+      "support_violation_count": 0
+    },
+    "pssource": {
+      "event_count": 100000,
+      "input_path": "/N/project/MIPHYS/PsSource_git/ore_powell_benchmark_run/annihilation_gammas.csv",
+      "maximum_absolute_energy_error_MeV": 8.000100004679211e-08,
+      "maximum_x": 0.9999992865073402,
+      "mean_high_x": 0.8917207450767608,
+      "mean_low_x": 0.38870585680041914,
+      "mean_mid_x": 0.7195732415667121,
+      "mean_x": 0.6666666144813099,
+      "median_x": 0.7051332982024718,
+      "minimum_x": 0.0017569003908912144,
+      "photon_count": 300000,
+      "q05_x": 0.22490442338609506,
+      "q95_x": 0.9768065327398422,
+      "std_x": 0.2362461462060372,
+      "support_violation_count": 0
+    }
+  },
+  "pairwise_results": [
+    {
+      "comparison": "pssource vs native_geant4",
+      "largest_ordered_energy_ks": 0.0042000000000000925,
+      "model_a": "pssource",
+      "model_b": "native_geant4",
+      "ordered_high_ks": 0.002970000000000028,
+      "ordered_low_ks": 0.002970000000000028,
+      "ordered_mid_ks": 0.0042000000000000925,
+      "unordered_histogram_l1": 0.018333333333333316,
+      "unordered_marginal_ks": 0.001843333333333308
+    },
+    {
+      "comparison": "pssource vs gate",
+      "largest_ordered_energy_ks": 0.004520347416340553,
+      "model_a": "pssource",
+      "model_b": "gate",
+      "ordered_high_ks": 0.003594248861911953,
+      "ordered_low_ks": 0.004520347416340553,
+      "ordered_mid_ks": 0.0022333519686926206,
+      "unordered_histogram_l1": 0.017510102494475936,
+      "unordered_marginal_ks": 0.0018018449005670067
+    },
+    {
+      "comparison": "native_geant4 vs gate",
+      "largest_ordered_energy_ks": 0.004315050714799096,
+      "model_a": "native_geant4",
+      "model_b": "gate",
+      "ordered_high_ks": 0.003217841226739071,
+      "ordered_low_ks": 0.0023030357000239365,
+      "ordered_mid_ks": 0.004315050714799096,
+      "unordered_histogram_l1": 0.014402461997178071,
+      "unordered_marginal_ks": 0.0014153038894656467
+    }
+  ],
+  "status": "PASS"
+}

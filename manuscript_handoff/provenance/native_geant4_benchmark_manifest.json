@@ -1,0 +1,21 @@
+{
+  "analytic_validation_status": "PASS",
+  "chi_square": 1286.944301954244,
+  "chi_square_z_score": 0.25643595835777944,
+  "degrees_of_freedom": 1274,
+  "events": 100000,
+  "geometry_validation_status": "PASS",
+  "maximum_cartesian_axis_mean_difference": 0.0014091646676209213,
+  "maximum_coplanarity_error": 3.1603312527295185e-16,
+  "maximum_marginal_cdf_difference": 0.0010752777544068004,
+  "maximum_standardized_residual": 3.364793457330506,
+  "photon_cos_theta_z_score": -1.4387525987701415,
+  "photon_count": 300000,
+  "photon_phi_z_score": -1.427497633422237,
+  "physics_backend": "native_G4OrePowellAtRestModel",
+  "plane_normal_cos_theta_z_score": -0.02984874148806048,
+  "plane_normal_phi_z_score": 1.0622190335658483,
+  "seed1": 271828,
+  "seed2": 314159,
+  "status": "PASS"
+}

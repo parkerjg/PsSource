@@ -1,0 +1,200 @@
+{
+  "events_analyzed": 100000,
+  "events_read": 100000,
+  "failures": [],
+  "fundamental_vector_checks": {
+    "maximum_abs_direction_dot_polarization": 1.4977672808633668e-12,
+    "maximum_direction_norm_error": 8.387734951043058e-13,
+    "maximum_polarization_norm_error": 8.348877145181177e-13,
+    "norm_tolerance": 2e-05,
+    "orthogonality_tolerance": 2e-05
+  },
+  "input_csv": "/N/project/MIPHYS/PsSource_git/ore_powell_polarized_benchmark_run/annihilation_gammas.csv",
+  "invalid_polarization_count": 0,
+  "multiplicity_failures": 0,
+  "ordinary_backend_comparison": {
+    "energy_cdf_tolerance": 0.02,
+    "maximum_binned_energy_cdf_difference": 0.00168333333333337,
+    "ordinary_event_count": 100000,
+    "ordinary_input_csv": "/N/project/MIPHYS/PsSource_git/ore_powell_benchmark_run/annihilation_gammas.csv",
+    "ordinary_photon_count": 300000,
+    "polarized_photon_count": 300000
+  },
+  "pairwise_polarization_correlations": {
+    "all_absolute_dots": {
+      "count": 300000,
+      "maximum": 0.9999992664690691,
+      "mean": 0.599233220302159,
+      "minimum": 6.771391166223023e-06,
+      "p01": 0.015334232541109884,
+      "p50": 0.6517510047996314,
+      "p99": 0.9958439174696118,
+      "standard_deviation": 0.2917459143388271
+    },
+    "all_signed_dots": {
+      "count": 300000,
+      "maximum": 0.9999992664690691,
+      "mean": 0.5080859976456439,
+      "minimum": -0.9958243777024445,
+      "p01": -0.7627329846083142,
+      "p50": 0.6306109021739283,
+      "p99": 0.9958439174696118,
+      "standard_deviation": 0.4313290505443898
+    },
+    "low_high_signed_dot": {
+      "count": 100000,
+      "maximum": 0.9999912045757514,
+      "mean": 0.483782733627679,
+      "minimum": -0.9915953779044137,
+      "p01": -0.711427433065611,
+      "p50": 0.5934438743084965,
+      "p99": 0.9939295226396753,
+      "standard_deviation": 0.423887442865258
+    },
+    "low_middle_signed_dot": {
+      "count": 100000,
+      "maximum": 0.9999922719460429,
+      "mean": 0.5561535813092735,
+      "minimum": -0.9877527409793169,
+      "p01": -0.6748565489162981,
+      "p50": 0.65270495053548,
+      "p99": 0.9946142439378135,
+      "standard_deviation": 0.3750137252124722
+    },
+    "middle_high_signed_dot": {
+      "count": 100000,
+      "maximum": 0.9999992664690691,
+      "mean": 0.48432167799997894,
+      "minimum": -0.9958243777024445,
+      "p01": -0.83498778051962,
+      "p50": 0.6458094945539727,
+      "p99": 0.9973498516373825,
+      "standard_deviation": 0.4840996871353906
+    }
+  },
+  "photon_count": 300000,
+  "plane_normal_failures": 0,
+  "polarization_relative_to_decay_plane": {
+    "absolute_dot_with_plane_normal": {
+      "count": 300000,
+      "maximum": 0.9999999999990864,
+      "mean": 0.7010700651999098,
+      "minimum": 1.791737939817382e-05,
+      "p01": 0.02227246186352549,
+      "p50": 0.8032747475984269,
+      "p99": 0.9999287017561755,
+      "standard_deviation": 0.2913264860748235
+    },
+    "angle_to_plane_normal_degrees": {
+      "count": 300000,
+      "maximum": 89.9989734097805,
+      "mean": 39.42942230546045,
+      "minimum": 7.744908233032573e-05,
+      "p01": 0.6841945760195255,
+      "p50": 36.556034501574686,
+      "p99": 88.72377640656315,
+      "standard_deviation": 25.44685135969511
+    },
+    "by_ordered_energy": {
+      "high": {
+        "count": 100000,
+        "maximum": 0.9999999999990864,
+        "mean": 0.7014146454265837,
+        "minimum": 2.916181491033246e-05,
+        "p01": 0.02278965398088404,
+        "p50": 0.804250472602474,
+        "p99": 0.9999263010056452,
+        "standard_deviation": 0.2910459502427315
+      },
+      "low": {
+        "count": 100000,
+        "maximum": 0.9999999996378995,
+        "mean": 0.7005730002514509,
+        "minimum": 1.791737939817382e-05,
+        "p01": 0.02201357668497339,
+        "p50": 0.8018895668203508,
+        "p99": 0.9999323761733742,
+        "standard_deviation": 0.2916077993132951
+      },
+      "middle": {
+        "count": 100000,
+        "maximum": 0.9999999996236105,
+        "mean": 0.7012225499216949,
+        "minimum": 0.0001090706591968875,
+        "p01": 0.022222610646905807,
+        "p50": 0.8037688929180052,
+        "p99": 0.9999288847967238,
+        "standard_deviation": 0.2913247700288965
+      }
+    },
+    "in_plane_component_magnitude": {
+      "count": 300000,
+      "maximum": 0.9999999998394837,
+      "mean": 0.5714331665516366,
+      "minimum": 1.3517414893122436e-06,
+      "p01": 0.011941164273054363,
+      "p50": 0.5956086633597275,
+      "p99": 0.9997519379537201,
+      "standard_deviation": 0.31159874575591545
+    }
+  },
+  "polarization_relative_to_global_z_axis": {
+    "absolute_dot_with_z": {
+      "count": 300000,
+      "maximum": 0.9999979905085543,
+      "mean": 0.4996006297048509,
+      "minimum": 8.163752000001406e-06,
+      "p01": 0.010012107949051776,
+      "p50": 0.4987246729789732,
+      "p99": 0.9901651285733388,
+      "standard_deviation": 0.2887611071916327
+    },
+    "angle_to_z_degrees": {
+      "count": 300000,
+      "maximum": 89.99953225146541,
+      "mean": 57.317894641876975,
+      "minimum": 0.11486316631153666,
+      "p01": 8.042268213500433,
+      "p50": 60.084339148881774,
+      "p99": 89.42633888603226,
+      "standard_deviation": 21.57655165276153
+    },
+    "by_ordered_energy": {
+      "high": {
+        "count": 100000,
+        "maximum": 0.9999979905085543,
+        "mean": 0.499272604781895,
+        "minimum": 8.163752000001406e-06,
+        "p01": 0.009988379225312738,
+        "p50": 0.4977832979688076,
+        "p99": 0.9904294805656331,
+        "standard_deviation": 0.288594664468176
+      },
+      "low": {
+        "count": 100000,
+        "maximum": 0.999988215474327,
+        "mean": 0.49979927907022703,
+        "minimum": 9.105166999998142e-06,
+        "p01": 0.009938312429744568,
+        "p50": 0.49916949785803344,
+        "p99": 0.9897536274005017,
+        "standard_deviation": 0.28861031494267303
+      },
+      "middle": {
+        "count": 100000,
+        "maximum": 0.9999910497163513,
+        "mean": 0.4997300052624305,
+        "minimum": 1.4178464000000677e-05,
+        "p01": 0.010105850311581144,
+        "p50": 0.4991915925388707,
+        "p99": 0.9903943473977048,
+        "standard_deviation": 0.2890777975370117
+      }
+    }
+  },
+  "status": "PASS",
+  "truth_limitations": [
+    "Magnetic substate m=-1,0,+1 is not recorded in the current event truth output.",
+    "Substate-specific validation cannot be performed from annihilation_gammas.csv."
+  ]
+}

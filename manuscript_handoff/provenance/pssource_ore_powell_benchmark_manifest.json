@@ -1,0 +1,15 @@
+{
+  "chi_square": 1236.910437150651,
+  "chi_square_z_score": -0.734770992515781,
+  "degrees_of_freedom": 1274,
+  "events": 100000,
+  "expected_photons": 300000,
+  "generation_mode": "explicit",
+  "independent_validation_status": "PASS",
+  "maximum_marginal_cdf_difference": 0.0020760363878027377,
+  "maximum_standardized_residual": 3.4276099592240272,
+  "physics_backend": "ore-powell",
+  "seed1": 314159,
+  "seed2": 271828,
+  "status": "PASS"
+}
