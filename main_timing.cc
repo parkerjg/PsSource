@@ -1,5 +1,6 @@
 #include "PositroniumGenerator.hh"
 #include "PositroniumTruthInfo.hh"
+#include "PsTerminalStateBuilder.hh"
 
 #include "G4Box.hh"
 #include "G4EmLivermorePolarizedPhysics.hh"
@@ -27,6 +28,7 @@
 #include "G4VUserActionInitialization.hh"
 #include "G4VUserDetectorConstruction.hh"
 #include "G4ios.hh"
+#include "G4Positron.hh"
 
 #include <array>
 #include <cmath>
@@ -1179,6 +1181,11 @@ public:
                (std::abs(z_mm - m_declared_ann_z_mm) <= kPosTolMm);
     }
 
+    std::uint64_t GetSourceEventId() const
+    {
+        return m_source_event_id;
+    }
+
 private:
     int m_event_id = -1;
 
@@ -1227,6 +1234,95 @@ public:
             m_event_action->IsExpectedExplicitPrimaryGamma(track)) {
             m_event_action->RecordAnnihilationGamma(track);
         }
+    }
+
+    void PostUserTrackingAction(const G4Track* track) override
+    {
+        if (!m_event_action || !track) {
+            return;
+        }
+
+        if (
+            track->GetParticleDefinition() !=
+            G4Positron::PositronDefinition()
+        ) {
+            return;
+        }
+
+        const G4Step* final_step = track->GetStep();
+        if (!final_step) {
+            return;
+        }
+
+        const G4StepPoint* post_step =
+            final_step->GetPostStepPoint();
+
+        if (!post_step) {
+            return;
+        }
+
+        const G4VProcess* terminating_process =
+            post_step->GetProcessDefinedStep();
+
+        const std::string process_name =
+            SafeProcessName(terminating_process);
+
+        if (process_name != "annihil") {
+            return;
+        }
+
+        const PsTerminalState state =
+            PsTerminalStateBuilder::Build(
+                *track,
+                *final_step,
+                m_event_action->GetSourceEventId()
+            );
+
+        G4cout
+            << "[PsTerminalState]"
+            << " source_event_id=" << state.source_event_id
+            << " track_id=" << state.positron_track_id
+            << " process=" << process_name
+            << " terminal_time_ns=" << state.terminal_time_ns
+            << " terminal_position_mm=("
+            << state.terminal_position.x() / mm << ","
+            << state.terminal_position.y() / mm << ","
+            << state.terminal_position.z() / mm << ")"
+            << " track_length_mm=" << state.track_length_mm
+            << " displacement_mm="
+            << state.source_to_terminal_distance_mm
+            << " terminal_ke_MeV="
+            << state.terminal_kinetic_energy_MeV
+            << " material="
+            << (
+                state.material
+                    ? state.material->GetName()
+                    : "NULL"
+            )
+            << " physical_volume="
+            << (
+                state.physical_volume
+                    ? state.physical_volume->GetName()
+                    : "NULL"
+            )
+            << " logical_volume="
+            << (
+                state.logical_volume
+                    ? state.logical_volume->GetName()
+                    : "NULL"
+            )
+            << " region="
+            << (
+                state.region
+                    ? state.region->GetName()
+                    : "NULL"
+            )
+            << " copy_number="
+            << state.copy_number
+            << " touchable_depth="
+            << state.touchable_copy_numbers.size()
+            << G4endl;
+
     }
 
 private:
