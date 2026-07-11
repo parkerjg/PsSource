@@ -76,7 +76,7 @@ echo
 echo "[1/5] Building ps_main ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
-    main.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc \
+    main.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc \
     -o ps_main \
     $RPATH_FLAG \
     $G4_LIBS_STR
@@ -85,7 +85,7 @@ echo
 echo "[2/5] Building ps_timing ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
-    main_timing.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc \
+    main_timing.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc \
     -o ps_timing \
     $RPATH_FLAG \
     $G4_LIBS_STR
