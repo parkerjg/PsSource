@@ -9,10 +9,12 @@
 
 class PositroniumTruthInfo : public G4VUserEventInformation {
 public:
+
     enum class GenerationMode : int {
-        Unknown        = -1,
-        NativeGeant4   = 0,
-        ExplicitProvider = 1
+        Unknown          = -1,
+        NativeGeant4     = 0,
+        ExplicitProvider = 1,
+        TransportCoupled = 2
     };
 
     enum class SourceTag : int {

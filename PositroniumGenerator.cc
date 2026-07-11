@@ -215,11 +215,32 @@ void PositroniumGenerator::GeneratePrimaries(G4Event* event)
                     "Null G4Event pointer passed to GeneratePrimaries.");
     }
 
-    if (m_generation_mode == GenerationMode::ExplicitProvider) {
-        GeneratePrimariesExplicit(event);
-    } else {
-        GeneratePrimariesNative(event);
+    switch (m_generation_mode) {
+        case GenerationMode::NativeGeant4:
+            GeneratePrimariesNative(event);
+            return;
+
+        case GenerationMode::ExplicitProvider:
+            GeneratePrimariesExplicit(event);
+            return;
+
+        case GenerationMode::TransportCoupled:
+            G4Exception(
+                "PositroniumGenerator::GeneratePrimaries",
+                "Positronium_TransportCoupledNotImplemented",
+                FatalException,
+                "Transport-coupled generation mode is recognized but not yet implemented."
+            );
+            return;
     }
+
+    G4Exception(
+        "PositroniumGenerator::GeneratePrimaries",
+        "Positronium_UnknownGenerationMode",
+        FatalException,
+        "Unknown positronium generation mode."
+    );
+
 }
 
 void PositroniumGenerator::GeneratePrimariesNative(G4Event* event)

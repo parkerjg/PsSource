@@ -13,9 +13,11 @@ struct TimedEventSpec;
 
 class PositroniumGenerator : public G4VUserPrimaryGeneratorAction {
 public:
+
     enum class GenerationMode {
         NativeGeant4,
-        ExplicitProvider
+        ExplicitProvider,
+        TransportCoupled
     };
 
     PositroniumGenerator();

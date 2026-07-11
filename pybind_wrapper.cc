@@ -21,6 +21,7 @@ PYBIND11_MODULE(gate_positronium, m)
     py::enum_<PositroniumGenerator::GenerationMode>(m, "GenerationMode")
         .value("NativeGeant4", PositroniumGenerator::GenerationMode::NativeGeant4)
         .value("ExplicitProvider", PositroniumGenerator::GenerationMode::ExplicitProvider)
+        .value("TransportCoupled", PositroniumGenerator::GenerationMode::TransportCoupled)
         .export_values();
 
     // -------------------------------------------------------------------------

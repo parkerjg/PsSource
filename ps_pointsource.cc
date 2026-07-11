@@ -205,7 +205,11 @@ static double ComputeFWHM(const std::vector<double>& x, const std::vector<double
 // -----------------------------------------------------------------------------
 // Options
 // -----------------------------------------------------------------------------
-enum class GenerationModeChoice { Native, Explicit };
+enum class GenerationModeChoice {
+    Native,
+    Explicit,
+    TransportCoupled
+};
 enum class DelayModeChoice { Exponential, Fixed };
 enum class ReconMethodChoice { LOR2G, CONE3G, UNIFIED };
 
@@ -266,9 +270,22 @@ struct AppOptions {
     bool write_pgm = true;
 };
 
-static const char* GenerationModeName(GenerationModeChoice m)
+static const char* GenerationModeName(
+    GenerationModeChoice mode
+)
 {
-    return (m == GenerationModeChoice::Native) ? "native" : "explicit";
+    switch (mode) {
+        case GenerationModeChoice::Native:
+            return "native";
+
+        case GenerationModeChoice::Explicit:
+            return "explicit";
+
+        case GenerationModeChoice::TransportCoupled:
+            return "transport-coupled";
+    }
+
+    return "unknown";
 }
 
 static const char* DelayModeName(DelayModeChoice m)
@@ -294,11 +311,29 @@ static ReconMethodChoice ParseReconMethod(const std::string& text)
     throw std::runtime_error("Invalid --recon-method: " + text + " (allowed: lor2g, cone3g, unified)");
 }
 
-static GenerationModeChoice ParseGenerationMode(const std::string& text)
+static GenerationModeChoice ParseGenerationMode(
+    const std::string& text
+)
 {
-    if (text == "native" || text == "Native") return GenerationModeChoice::Native;
-    if (text == "explicit" || text == "Explicit") return GenerationModeChoice::Explicit;
-    throw std::runtime_error("Invalid --generation-mode: " + text);
+    if (text == "native" || text == "Native") {
+        return GenerationModeChoice::Native;
+    }
+
+    if (text == "explicit" || text == "Explicit") {
+        return GenerationModeChoice::Explicit;
+    }
+
+    if (
+        text == "transport-coupled" ||
+        text == "TransportCoupled"
+    ) {
+        return GenerationModeChoice::TransportCoupled;
+    }
+
+    throw std::runtime_error(
+        "Invalid --generation-mode: " + text +
+        ". Allowed: native, explicit, transport-coupled"
+    );
 }
 
 static DelayModeChoice ParseDelayMode(const std::string& text)
@@ -574,7 +609,7 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
                 << "Usage: ps_pointsource [options]\n"
                 << "  --preset NAME\n"
                 << "  --beam-on N\n"
-                << "  --generation-mode native|explicit\n"
+		<< "  --generation-mode native|explicit|transport-coupled\n"
                 << "  --f-direct F --f-pps F --f-ops F --ortho-3g-fraction F\n"
                 << "  --prompt on|off --positron-range on|off\n"
                 << "  --recon-method lor2g|cone3g|unified\n"
@@ -587,6 +622,17 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
         else {
             throw std::runtime_error("Unknown option: " + arg);
         }
+    }
+
+    if (
+        opt.generation_mode ==
+            GenerationModeChoice::TransportCoupled &&
+        opt.enable_positron_range
+    ) {
+        throw std::runtime_error(
+            "--positron-range cannot be enabled in transport-coupled mode. "
+            "Geant4 positron transport determines the terminal position."
+        );
     }
 
     ValidateFractionTriplet(opt.f_direct, opt.f_pps, opt.f_ops);
@@ -1317,11 +1363,25 @@ public:
     {
         auto* gen = new PositroniumGenerator();
 
-        if (m_opt.generation_mode == GenerationModeChoice::Explicit) {
-            gen->SetGenerationMode(PositroniumGenerator::GenerationMode::ExplicitProvider);
-        } else {
-            gen->SetGenerationMode(PositroniumGenerator::GenerationMode::NativeGeant4);
-        }
+	switch (m_opt.generation_mode) {
+	    case GenerationModeChoice::Native:
+		gen->SetGenerationMode(
+		    PositroniumGenerator::GenerationMode::NativeGeant4
+		);
+		break;
+
+	    case GenerationModeChoice::Explicit:
+		gen->SetGenerationMode(
+		    PositroniumGenerator::GenerationMode::ExplicitProvider
+		);
+		break;
+
+	    case GenerationModeChoice::TransportCoupled:
+		gen->SetGenerationMode(
+		    PositroniumGenerator::GenerationMode::TransportCoupled
+		);
+		break;
+	}
 
         gen->SetSourcePosition(m_opt.source_mm);
         gen->SetPositronKineticEnergyKeV(m_opt.positron_kinetic_kev);

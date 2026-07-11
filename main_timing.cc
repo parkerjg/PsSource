@@ -42,7 +42,11 @@
 // -----------------------------------------------------------------------------
 // Options
 // -----------------------------------------------------------------------------
-enum class GenerationModeChoice { Native, Explicit };
+enum class GenerationModeChoice {
+    Native,
+    Explicit,
+    TransportCoupled
+};
 enum class DelayModeChoice { Exponential, Fixed };
 enum class ThreeGammaModelChoice {
     Approximate,
@@ -103,9 +107,22 @@ struct AppOptions {
 // -----------------------------------------------------------------------------
 // Helper naming / preset / JSON helpers
 // -----------------------------------------------------------------------------
-static const char* GenerationModeName(GenerationModeChoice m)
+static const char* GenerationModeName(
+    GenerationModeChoice mode
+)
 {
-    return (m == GenerationModeChoice::Native) ? "native" : "explicit";
+    switch (mode) {
+        case GenerationModeChoice::Native:
+            return "native";
+
+        case GenerationModeChoice::Explicit:
+            return "explicit";
+
+        case GenerationModeChoice::TransportCoupled:
+            return "transport-coupled";
+    }
+
+    return "unknown";
 }
 
 static const char* ThreeGammaModelName(
@@ -362,7 +379,8 @@ static void PrintUsage(const char* prog)
         << "Options:\n"
         << "  --preset NAME                Apply a named preset first; later CLI args override it\n"
         << "  --beam-on N                  Number of events to run (default: 10000)\n"
-        << "  --generation-mode MODE       native | explicit (default: native)\n"
+	<< "  --generation-mode MODE       native | explicit | transport-coupled\n"
+	<< "                               (default: native)\n"
         << "  --qe on|off                  Enable quantum entanglement metadata/physics switch (default: on)\n"
 	<< "  --three-gamma-model MODEL   approximate | ore-powell | ore-powell-polarized\n"
 	<< "                               Select explicit 3-gamma kinematic backend\n"
@@ -451,11 +469,29 @@ static double ParseDouble(const std::string& text, const std::string& label)
     }
 }
 
-static GenerationModeChoice ParseGenerationMode(const std::string& text)
+static GenerationModeChoice ParseGenerationMode(
+    const std::string& text
+)
 {
-    if (text == "native" || text == "Native") return GenerationModeChoice::Native;
-    if (text == "explicit" || text == "Explicit") return GenerationModeChoice::Explicit;
-    throw std::runtime_error("Invalid --generation-mode: " + text + ". Allowed: native, explicit");
+    if (text == "native" || text == "Native") {
+        return GenerationModeChoice::Native;
+    }
+
+    if (text == "explicit" || text == "Explicit") {
+        return GenerationModeChoice::Explicit;
+    }
+
+    if (
+        text == "transport-coupled" ||
+        text == "TransportCoupled"
+    ) {
+        return GenerationModeChoice::TransportCoupled;
+    }
+
+    throw std::runtime_error(
+        "Invalid --generation-mode: " + text +
+        ". Allowed: native, explicit, transport-coupled"
+    );
 }
 
 static DelayModeChoice ParseDelayMode(const std::string& text)
@@ -672,6 +708,17 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
         else {
             throw std::runtime_error("Unknown option: " + arg);
         }
+    }
+
+    if (
+        opt.generation_mode ==
+            GenerationModeChoice::TransportCoupled &&
+        opt.enable_positron_range
+    ) {
+        throw std::runtime_error(
+            "--positron-range cannot be enabled in transport-coupled mode. "
+            "Geant4 positron transport determines the terminal position."
+        );
     }
 
     ValidateFractionTriplet(opt.f_direct, opt.f_pps, opt.f_ops);
@@ -1292,11 +1339,25 @@ public:
     {
         auto* gen = new PositroniumGenerator();
 
-        if (m_opt.generation_mode == GenerationModeChoice::Explicit) {
-            gen->SetGenerationMode(PositroniumGenerator::GenerationMode::ExplicitProvider);
-        } else {
-            gen->SetGenerationMode(PositroniumGenerator::GenerationMode::NativeGeant4);
-        }
+	switch (m_opt.generation_mode) {
+	    case GenerationModeChoice::Native:
+		gen->SetGenerationMode(
+		    PositroniumGenerator::GenerationMode::NativeGeant4
+		);
+		break;
+
+	    case GenerationModeChoice::Explicit:
+		gen->SetGenerationMode(
+		    PositroniumGenerator::GenerationMode::ExplicitProvider
+		);
+		break;
+
+	    case GenerationModeChoice::TransportCoupled:
+		gen->SetGenerationMode(
+		    PositroniumGenerator::GenerationMode::TransportCoupled
+		);
+		break;
+	}
 
         gen->SetSourcePosition(m_opt.source_mm);
         gen->SetPositronKineticEnergyKeV(m_opt.positron_kinetic_kev);
