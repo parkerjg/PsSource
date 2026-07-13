@@ -1,6 +1,7 @@
 #include "PositroniumGenerator.hh"
 #include "PositroniumTruthInfo.hh"
 #include "PsTerminalStateBuilder.hh"
+#include "PsSourceAnnihilationPhysics.hh"
 
 #include "G4Box.hh"
 #include "G4EmLivermorePolarizedPhysics.hh"
@@ -1602,7 +1603,19 @@ int main(int argc, char** argv)
                     "Failed to create reference physics list FTFP_BERT.");
     }
 
-    physics->ReplacePhysics(new G4EmLivermorePolarizedPhysics());
+    physics->ReplacePhysics(
+        new G4EmLivermorePolarizedPhysics()
+    );
+
+    if (
+        opt.generation_mode ==
+        GenerationModeChoice::TransportCoupled
+    ) {
+        physics->RegisterPhysics(
+            new PsSourceAnnihilationPhysics()
+        );
+    }
+
     run_manager->SetUserInitialization(physics);
 
     run_manager->SetUserInitialization(new TimingActionInitialization(opt));

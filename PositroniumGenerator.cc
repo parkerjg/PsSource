@@ -225,12 +225,7 @@ void PositroniumGenerator::GeneratePrimaries(G4Event* event)
             return;
 
         case GenerationMode::TransportCoupled:
-            G4Exception(
-                "PositroniumGenerator::GeneratePrimaries",
-                "Positronium_TransportCoupledNotImplemented",
-                FatalException,
-                "Transport-coupled generation mode is recognized but not yet implemented."
-            );
+            GeneratePrimariesTransportCoupled(event);
             return;
     }
 
@@ -243,95 +238,202 @@ void PositroniumGenerator::GeneratePrimaries(G4Event* event)
 
 }
 
-void PositroniumGenerator::GeneratePrimariesNative(G4Event* event)
+void PositroniumGenerator::GeneratePrimariesNative(
+    G4Event* event
+)
 {
-    const double base_time = m_use_external_base_time ? (m_base_time_ns * ns) : 0.0;
+    GenerateTransportedPositronSource(
+        event,
+        PositroniumTruthInfo::GenerationMode::NativeGeant4,
+        PositroniumTruthInfo::SourceTag::NativePositronSource
+    );
+}
+
+void PositroniumGenerator::
+GeneratePrimariesTransportCoupled(
+    G4Event* event
+)
+{
+    GenerateTransportedPositronSource(
+        event,
+        PositroniumTruthInfo::GenerationMode::TransportCoupled,
+        PositroniumTruthInfo::SourceTag::NativePositronSource
+    );
+}
+
+void PositroniumGenerator::
+GenerateTransportedPositronSource(
+    G4Event* event,
+    PositroniumTruthInfo::GenerationMode truth_mode,
+    PositroniumTruthInfo::SourceTag source_tag
+)
+{
+    const double base_time =
+        m_use_external_base_time
+            ? (m_base_time_ns * ns)
+            : 0.0;
 
     auto* truth = new PositroniumTruthInfo();
-    truth->source_event_id = ++m_generator_event_id;
 
-    truth->generation_mode = PositroniumTruthInfo::GenerationMode::NativeGeant4;
-    truth->source_tag = PositroniumTruthInfo::SourceTag::NativePositronSource;
+    truth->source_event_id =
+        ++m_generator_event_id;
+
+    truth->generation_mode = truth_mode;
+    truth->source_tag = source_tag;
     truth->source_is_explicit = false;
 
     FillRequestedTruthMetadata(truth);
 
-    // Native mode launches a positron source and lets Geant4 determine the real
-    // annihilation class / multiplicity / time / position downstream.
+    // A transported positron is launched. The annihilation class,
+    // multiplicity, time, and position are determined downstream.
     truth->ps_class_id = -1;
     truth->annihilation_mode = -1;
     truth->declared_annihilation_valid = false;
     truth->delay_ns = -1.0;
 
-    truth->has_prompt_gamma = m_has_prompt_gamma;
-    truth->prompt_energy_MeV = m_has_prompt_gamma ? m_prompt_energy_MeV : 0.0;
+    truth->has_prompt_gamma =
+        m_has_prompt_gamma;
 
-    truth->source_x_mm = m_source_position_mm[0];
-    truth->source_y_mm = m_source_position_mm[1];
-    truth->source_z_mm = m_source_position_mm[2];
+    truth->prompt_energy_MeV =
+        m_has_prompt_gamma
+            ? m_prompt_energy_MeV
+            : 0.0;
 
-    truth->ann_x_mm = std::numeric_limits<double>::quiet_NaN();
-    truth->ann_y_mm = std::numeric_limits<double>::quiet_NaN();
-    truth->ann_z_mm = std::numeric_limits<double>::quiet_NaN();
+    truth->source_x_mm =
+        m_source_position_mm[0];
+
+    truth->source_y_mm =
+        m_source_position_mm[1];
+
+    truth->source_z_mm =
+        m_source_position_mm[2];
+
+    truth->ann_x_mm =
+        std::numeric_limits<double>::quiet_NaN();
+
+    truth->ann_y_mm =
+        std::numeric_limits<double>::quiet_NaN();
+
+    truth->ann_z_mm =
+        std::numeric_limits<double>::quiet_NaN();
 
     truth->positron_range_mm = -1.0;
     truth->medium_id = -1;
     truth->local_tau_ns = -1.0;
-    truth->qe_mode = m_enable_quantum_entanglement;
+    truth->qe_mode =
+        m_enable_quantum_entanglement;
 
     event->SetUserInformation(truth);
 
-    auto* particle_table = G4ParticleTable::GetParticleTable();
+    auto* particle_table =
+        G4ParticleTable::GetParticleTable();
 
-    G4ParticleDefinition* positron_def = particle_table->FindParticle(-11); // e+
+    G4ParticleDefinition* positron_def =
+        particle_table->FindParticle(-11);
+
     if (!positron_def) {
-        G4ExceptionDescription msg;
-        msg << "Particle definition not found for positron (PDG -11).";
-        G4Exception("PositroniumGenerator::GeneratePrimariesNative",
-                    "Positronium_102",
-                    FatalException,
-                    msg);
+        G4ExceptionDescription message;
+        message
+            << "Particle definition not found "
+            << "for positron (PDG -11).";
+
+        G4Exception(
+            "PositroniumGenerator::"
+            "GenerateTransportedPositronSource",
+            "Positronium_102",
+            FatalException,
+            message
+        );
     }
 
-    G4ParticleDefinition* gamma_def = particle_table->FindParticle(22); // gamma
-    if (m_has_prompt_gamma && !gamma_def) {
-        G4ExceptionDescription msg;
-        msg << "Particle definition not found for gamma (PDG 22).";
-        G4Exception("PositroniumGenerator::GeneratePrimariesNative",
-                    "Positronium_103",
-                    FatalException,
-                    msg);
+    G4ParticleDefinition* gamma_def =
+        particle_table->FindParticle(22);
+
+    if (
+        m_has_prompt_gamma &&
+        !gamma_def
+    ) {
+        G4ExceptionDescription message;
+        message
+            << "Particle definition not found "
+            << "for gamma (PDG 22).";
+
+        G4Exception(
+            "PositroniumGenerator::"
+            "GenerateTransportedPositronSource",
+            "Positronium_103",
+            FatalException,
+            message
+        );
     }
 
-    const G4ThreeVector source_pos(
+    const G4ThreeVector source_position(
         m_source_position_mm[0] * mm,
         m_source_position_mm[1] * mm,
         m_source_position_mm[2] * mm
     );
 
-    auto* source_vertex = new G4PrimaryVertex(source_pos, base_time);
+    auto* source_vertex =
+        new G4PrimaryVertex(
+            source_position,
+            base_time
+        );
 
     {
-        auto* positron = new G4PrimaryParticle(positron_def);
+        auto* positron =
+            new G4PrimaryParticle(
+                positron_def
+            );
 
-        const auto dir = SampleIsotropicDirection();
-        positron->SetMomentumDirection(G4ThreeVector(dir[0], dir[1], dir[2]));
-        positron->SetKineticEnergy(m_positron_kinetic_energy_MeV * MeV);
+        const auto direction =
+            SampleIsotropicDirection();
 
-        source_vertex->SetPrimary(positron);
+        positron->SetMomentumDirection(
+            G4ThreeVector(
+                direction[0],
+                direction[1],
+                direction[2]
+            )
+        );
+
+        positron->SetKineticEnergy(
+            m_positron_kinetic_energy_MeV * MeV
+        );
+
+        source_vertex->SetPrimary(
+            positron
+        );
     }
 
     if (m_has_prompt_gamma) {
-        auto* prompt_gamma = new G4PrimaryParticle(gamma_def);
+        auto* prompt_gamma =
+            new G4PrimaryParticle(
+                gamma_def
+            );
 
-        const auto dir = SampleIsotropicDirection();
-        prompt_gamma->SetMomentumDirection(G4ThreeVector(dir[0], dir[1], dir[2]));
-        prompt_gamma->SetKineticEnergy(m_prompt_energy_MeV * MeV);
+        const auto direction =
+            SampleIsotropicDirection();
 
-        source_vertex->SetPrimary(prompt_gamma);
+        prompt_gamma->SetMomentumDirection(
+            G4ThreeVector(
+                direction[0],
+                direction[1],
+                direction[2]
+            )
+        );
+
+        prompt_gamma->SetKineticEnergy(
+            m_prompt_energy_MeV * MeV
+        );
+
+        source_vertex->SetPrimary(
+            prompt_gamma
+        );
     }
 
-    event->AddPrimaryVertex(source_vertex);
+    event->AddPrimaryVertex(
+        source_vertex
+    );
 }
 
 void PositroniumGenerator::FillTruthFromTimedEventSpec(const TimedEventSpec& spec, G4Event* event) const

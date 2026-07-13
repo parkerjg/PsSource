@@ -3,6 +3,7 @@
 
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "PositroniumProvider.hh"
+#include "PositroniumTruthInfo.hh"
 
 #include <array>
 #include <cstdint>
@@ -67,7 +68,14 @@ public:
 
 private:
     void GeneratePrimariesNative(G4Event* event);
+    void GeneratePrimariesTransportCoupled(G4Event* event);
     void GeneratePrimariesExplicit(G4Event* event);
+
+    void GenerateTransportedPositronSource(
+        G4Event* event,
+        PositroniumTruthInfo::GenerationMode truth_mode,
+        PositroniumTruthInfo::SourceTag source_tag
+    );
 
     void FillRequestedTruthMetadata(PositroniumTruthInfo* truth) const;
     void FillTruthFromTimedEventSpec(const TimedEventSpec& spec, G4Event* event) const;
