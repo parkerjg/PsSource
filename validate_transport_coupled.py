@@ -100,7 +100,10 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--case",
-        choices=["direct-2g-zero-delay"],
+        choices=[
+            "direct-2g-zero-delay",
+            "pps-2g-fixed-delay",
+        ],
         required=True,
         help="Transport regression case to validate.",
     )
@@ -277,10 +280,12 @@ def position_difference(
     )
 
 
-def validate_direct_2g_zero_delay(
+def validate_deterministic_2g(
     summary_rows: dict[int, dict[str, Any]],
     gamma_groups: dict[int, list[dict[str, Any]]],
     expected_events: int,
+    case_name: str,
+    expected_ps_delay_ns: float,
 ) -> dict[str, Any]:
     failures: list[str] = []
 
@@ -349,9 +354,16 @@ def validate_direct_2g_zero_delay(
                 f"Event {event_id}: unexpected prompt gamma"
             )
 
-        if abs(summary["sampled_ps_delay_ns"]) > summary_tolerance:
+        ps_delay_error = abs(
+            summary["sampled_ps_delay_ns"]
+            - expected_ps_delay_ns
+        )
+
+        if ps_delay_error > summary_tolerance:
             failures.append(
-                f"Event {event_id}: sampled Ps delay is not zero"
+                f"Event {event_id}: sampled Ps delay "
+                f"{summary['sampled_ps_delay_ns']} ns does not match "
+                f"expected {expected_ps_delay_ns} ns"
             )
 
         expected_summary_time = (
@@ -568,7 +580,7 @@ def validate_direct_2g_zero_delay(
 
     return {
         "status": "PASS" if not failures else "FAIL",
-        "case": "direct-2g-zero-delay",
+        "case": case_name,
         "expected_events": expected_events,
         "summary_events": len(summary_rows),
         "gamma_rows": total_gamma_rows,
@@ -601,11 +613,18 @@ def main() -> int:
     summary_rows = read_summary(args.summary)
     gamma_groups = read_gammas(args.gammas)
 
-    if args.case == "direct-2g-zero-delay":
-        result = validate_direct_2g_zero_delay(
+    deterministic_2g_cases = {
+        "direct-2g-zero-delay": 0.0,
+        "pps-2g-fixed-delay": 3.0,
+    }
+
+    if args.case in deterministic_2g_cases:
+        result = validate_deterministic_2g(
             summary_rows,
             gamma_groups,
             args.expected_events,
+            args.case,
+            deterministic_2g_cases[args.case],
         )
     else:
         raise ValueError(f"Unsupported validation case: {args.case}")
