@@ -1,38 +1,38 @@
-
 # PsSource Public Integration Contract
 
 ## 1. Purpose
 
 PsSource is a modular Geant4 extension for positronium-aware terminal positron annihilation.
 
-Its purpose is to allow an existing Geant4 application to enable or disable positronium modeling without requiring changes to the host application's:
+Its purpose is to allow an existing Geant4 application to enable or disable configurable positronium modeling without requiring changes to the host application’s:
 
-- source implementation;
-- phantom geometry;
-- scanner geometry;
+- primary-particle source;
+- geometry;
 - material definitions;
-- detector scoring;
-- optical transport;
+- particle transport before annihilation;
+- detector construction;
+- sensitive detectors;
+- scoring;
 - digitization;
-- coincidence processing;
-- reconstruction;
-- application-specific output.
+- event reconstruction;
+- analysis pipeline;
+- output infrastructure.
 
 In transport-coupled mode, the host application creates and transports the positron normally. PsSource acts only when the transported positron reaches the terminal Geant4 at-rest annihilation stage.
 
 PsSource then:
 
 1. captures the terminal positron state;
-2. resolves the configured positronium environment;
-3. selects direct annihilation, para-positronium, or ortho-positronium;
-4. samples the positronium delay;
+2. resolves the applicable positronium environment;
+3. selects direct annihilation, para-positronium, or ortho-positronium behavior;
+4. samples the applicable positronium delay;
 5. selects the two-photon or three-photon final state;
 6. creates ordinary Geant4 photon secondaries;
-7. optionally records truth and model provenance.
+7. optionally records annihilation truth and model provenance.
 
-The generated photons are transported by Geant4 through the host application's existing geometry and detector model.
+The generated photons are returned to ordinary Geant4 tracking and interact with the host geometry and detector systems without requiring PsSource-specific downstream handling.
 
-This document defines the intended public integration behavior of PsSource. It is the design contract against which implementation, refactoring, testing, documentation, and release decisions should be evaluated.
+This document defines the intended public integration behavior of PsSource. It is the design contract against which implementation, refactoring, testing, documentation, release decisions, and scientific claims should be evaluated.
 
 ---
 
@@ -40,19 +40,39 @@ This document defines the intended public integration behavior of PsSource. It i
 
 This contract applies primarily to the reusable transport-coupled integration path.
 
-PsSource may also continue to provide explicit source-generation applications and validation tools. Those applications are useful for:
+PsSource may also continue to provide explicit event-generation applications and validation tools. Those applications are useful for:
 
 - controlled source studies;
 - analytic validation;
 - cross-framework comparisons;
+- model-development work;
 - regression testing;
-- model-development work.
+- reproducibility studies;
+- detector and reconstruction sensitivity studies.
 
-However, explicit source-generation applications are not the primary external integration interface defined by this contract.
+However, explicit event generation is not the primary external integration interface defined by this contract.
 
 The primary external-use scenario is:
 
-> A researcher already has a functioning Geant4 PET application and wants to enable positronium-aware annihilation physics without redesigning the rest of the simulation.
+> A researcher already has a functioning Geant4 application and wants to enable positronium-aware annihilation physics without redesigning the application’s source, geometry, transport, scoring, detector response, or output pipeline.
+
+PsSource is not restricted to PET or imaging applications.
+
+Potential host applications include:
+
+- PET and positronium-sensitive imaging simulations;
+- positron-beam experiments;
+- accelerator-target studies;
+- antimatter experiments;
+- positronium lifetime spectroscopy;
+- material-characterization studies;
+- condensed-matter simulations;
+- detector-development experiments;
+- polarization and symmetry studies;
+- fundamental two-photon and three-photon annihilation studies;
+- any Geant4 application that produces transported positrons.
+
+PET is the principal initial application domain and validation context, but it is not a requirement of the PsSource software architecture.
 
 ---
 
@@ -60,36 +80,48 @@ The primary external-use scenario is:
 
 The intended host application may contain any combination of:
 
-- a custom primary generator;
+- a custom `G4VUserPrimaryGeneratorAction`;
 - `G4GeneralParticleSource`;
-- a radioactive-decay source;
-- one or more positron-emitting radionuclides;
-- a custom or reference Geant4 physics list;
-- homogeneous or heterogeneous phantoms;
-- voxelized patient data;
-- whole-body PET geometry;
-- small-animal PET geometry;
-- monolithic scintillators;
-- segmented detectors;
+- Geant4 radioactive decay;
+- accelerator-generated positrons;
+- positron beams;
+- radionuclide sources;
+- multiple primary particles;
+- nonzero primary times;
+- arbitrary source locations;
+- arbitrary positron kinetic-energy distributions;
+- custom or reference Geant4 physics lists;
+- homogeneous or heterogeneous materials;
+- voxelized geometries;
+- magnetic or electric fields;
+- imaging systems;
+- spectroscopy systems;
+- beamline instrumentation;
+- particle detectors;
+- scintillation detectors;
+- semiconductor detectors;
+- calorimeters;
+- sensitive detectors;
+- primitive scorers;
 - optical-photon transport;
 - parameterized detector response;
-- custom sensitive detectors;
 - digitization;
-- coincidence sorting;
 - reconstruction;
-- application-specific truth or analysis output.
+- application-specific truth and analysis output.
 
 PsSource must not require the host application to use:
 
 - `PositroniumGenerator`;
 - `TimedEventSpec`;
 - `main_timing.cc`;
+- the current PsSource command-line parser;
 - a particular detector class;
 - a particular sensitive-detector name;
 - a particular output format;
 - a particular source implementation;
-- a particular scanner geometry;
-- a particular application event-action class.
+- a particular geometry;
+- a particular event-action implementation;
+- PET-specific scoring or reconstruction code.
 
 ---
 
@@ -133,7 +165,7 @@ When PsSource is not registered:
 
 * native Geant4 positron annihilation remains active;
 * no PsSource configuration is required;
-* no PsSource event truth is produced;
+* no PsSource truth is produced;
 * the host application behaves as it did before PsSource was added.
 
 When PsSource is registered:
@@ -141,15 +173,15 @@ When PsSource is registered:
 * Geant4 still performs positron transport;
 * PsSource replaces terminal at-rest positron annihilation;
 * direct, para-positronium, and ortho-positronium behavior become configurable;
-* Ps delay is applied after positron transport;
+* positronium delay is applied after positron transport;
 * generated photons continue through ordinary Geant4 transport;
-* the host detector and scoring pipeline remain unchanged.
+* the host geometry, detector, scoring, and analysis pipeline remain unchanged.
 
 ---
 
 ## 5. Activation Model
 
-PsSource activation should occur through physics registration.
+PsSource activation should occur through Geant4 physics registration.
 
 Recommended pattern:
 
@@ -161,7 +193,7 @@ if (enable_pssource) {
 }
 ```
 
-PsSource should not rely on a hidden event-by-event Boolean that leaves native and PsSource at-rest annihilation processes simultaneously active.
+PsSource should not rely on a hidden event-by-event Boolean that leaves native and PsSource terminal annihilation processes simultaneously active.
 
 Registration-level activation is preferred because it provides a clear and auditable distinction between:
 
@@ -188,41 +220,46 @@ PsSource owns:
 * ortho-positronium two-photon versus three-photon selection;
 * two-photon final-state generation;
 * three-photon final-state generation;
-* optional photon polarization assignment;
-* model provenance;
+* optional photon-polarization assignment;
+* model identity and provenance;
 * optional annihilation truth;
 * creation of valid Geant4 photon secondaries;
-* return of those secondaries to normal Geant4 tracking.
+* return of those secondaries to ordinary Geant4 tracking.
 
 ### 6.2 Host Application Responsibilities
 
 The host application remains responsible for:
 
-* creation of the primary positron or radionuclide;
+* creation of the primary positron, radionuclide, or parent particle;
 * radionuclide decay;
 * positron initial energy;
 * positron initial position;
 * positron initial time;
 * positron transport before terminal annihilation;
-* phantom geometry;
-* scanner geometry;
+* geometry;
 * material definitions;
-* electromagnetic transport outside the replaced terminal annihilation behavior;
-* detector scoring;
+* electromagnetic transport outside terminal annihilation;
+* external fields;
+* detector construction;
+* sensitive detectors;
+* scoring;
 * optical-photon production and transport;
 * photodetector response;
 * digitization;
 * electronics modeling;
+* trigger logic;
 * coincidence processing;
-* reconstruction;
+* event reconstruction;
+* image reconstruction;
+* spectroscopy analysis;
 * application-level output;
-* patient or phantom data loading.
+* user-specific scientific interpretation.
 
 ### 6.3 Boundary Rule
 
 PsSource must not take ownership of host systems outside terminal positron annihilation.
 
-The host application must not be required to understand the internal PsSource final-state generator in order to transport or detect the resulting photons.
+The host application must not be required to understand the internal PsSource final-state generator in order to transport, score, detect, or analyze the resulting photons.
 
 ---
 
@@ -309,9 +346,9 @@ The exact representation may evolve, but the available information should includ
 * logical volume;
 * physical volume;
 * copy number;
-* touchable hierarchy or equivalent context.
+* touchable hierarchy or equivalent geometry context.
 
-The terminal-state object should be independent of application-specific truth or output code.
+The terminal-state object should be independent of application-specific truth and output code.
 
 ---
 
@@ -350,7 +387,7 @@ Semantics:
 * `Exponential`: sample a nonnegative delay from an exponential distribution with the configured lifetime.
 * `Fixed`: apply the configured fixed delay to the realized positronium branch.
 
-Direct-annihilation timing behavior must be documented explicitly by the implementation. The current validated transport behavior uses zero Ps delay for direct annihilation.
+Direct-annihilation timing behavior must be documented explicitly by the implementation. The current validated transport behavior uses zero additional positronium delay for direct annihilation.
 
 ### 9.3 Three-Photon Models
 
@@ -366,7 +403,7 @@ Conceptual meanings:
 
 * `ApproximatePhaseSpace`: controlled approximate three-photon generation.
 * `OrePowell`: validated Ore–Powell energy and angular generation.
-* `PolarizedOrePowell`: Ore–Powell generation with polarization truth or polarization-aware photon construction.
+* `PolarizedOrePowell`: Ore–Powell generation with polarization-aware photon construction.
 
 Unavailable backends must fail clearly during initialization.
 
@@ -395,8 +432,9 @@ Future configuration may include:
 * environment-provider selection;
 * optional truth-recorder selection;
 * diagnostic verbosity;
-* model version selection;
-* validation metadata.
+* model-version selection;
+* validation metadata;
+* user-defined backend selection.
 
 Public configuration should remain focused on quantities an external user needs.
 
@@ -458,7 +496,7 @@ Required:
 
 ### 10.5 Model Availability
 
-If the selected model backend is unavailable, unsupported, or improperly configured, initialization must fail with a clear message.
+If the selected backend is unavailable, unsupported, or improperly configured, initialization must fail with a clear message.
 
 ### 10.6 Numeric Validity
 
@@ -505,11 +543,12 @@ PsSource must support positrons originating from:
 * custom primary generators;
 * `G4GeneralParticleSource`;
 * Geant4 radioactive decay;
-* radionuclide-specific spectra;
+* accelerator beamlines;
+* secondary-particle production;
 * multiple source locations;
 * multiple source times;
 * realistic positron energy distributions;
-* arbitrary host geometry.
+* arbitrary host geometries.
 
 PsSource must not depend on:
 
@@ -518,13 +557,14 @@ PsSource must not depend on:
 * current CLI parsing;
 * `main_timing.cc`;
 * current timing-test geometry;
+* PET-specific source conventions;
 * current detector names.
 
-Explicit source-generation applications may continue to use specialized source components. Those components must not be required by the reusable transport-coupled physics extension.
+Explicit event-generation applications may continue to use specialized source components. Those components must not be required by the reusable transport-coupled physics extension.
 
 ---
 
-## 13. Detector Independence
+## 13. Geometry and Detector Independence
 
 PsSource-generated photons must be ordinary Geant4 photon secondaries.
 
@@ -540,21 +580,28 @@ Each generated photon must have:
 
 PsSource must not require:
 
+* a specific geometry;
+* a specific detector technology;
 * a specific sensitive detector;
 * a specific detector name;
 * a specific hit collection;
+* a PET-specific detector class;
 * a QEPET-specific class;
 * a particular scoring action;
 * a particular output schema.
 
-The same PsSource integration must be usable with:
+The same PsSource integration should be usable with:
 
-* QEPET;
-* a conventional crystal PET model;
-* a monolithic detector model;
-* a total-body PET model;
-* a small-animal scanner;
-* a generic Geant4 detector.
+* PET scanners;
+* total-body imaging systems;
+* small-animal imaging systems;
+* positron-beam experiments;
+* accelerator-target experiments;
+* calorimeters;
+* scintillation detectors;
+* semiconductor detectors;
+* spectroscopy setups;
+* generic Geant4 scoring geometries.
 
 ---
 
@@ -596,8 +643,11 @@ Future provider implementations may resolve environment from:
 * copy number;
 * touchable hierarchy;
 * spatial coordinates;
-* image or voxel maps;
-* user callbacks.
+* voxel maps;
+* detector subsystem;
+* target layer;
+* user callbacks;
+* externally supplied material-property databases.
 
 Examples:
 
@@ -606,6 +656,7 @@ MaterialPsEnvironmentProvider
 RegionPsEnvironmentProvider
 VolumePsEnvironmentProvider
 VoxelPsEnvironmentProvider
+CallbackPsEnvironmentProvider
 ```
 
 ### 14.3 Resolution Location
@@ -614,11 +665,11 @@ Environment resolution must occur at the transported terminal state.
 
 It must not be based solely on the positron source location.
 
-### 14.4 No Automatic Biological Inference
+### 14.4 No Automatic Physical Inference
 
-PsSource must not claim to infer biological positronium parameters directly from Geant4 material composition unless a separately validated model is explicitly provided.
+PsSource must not claim to infer material-specific, chemical, condensed-matter, biological, or tissue-specific positronium parameters directly from generic Geant4 material composition unless a separately validated model is explicitly provided.
 
-The environment provider supplies model parameters. It does not automatically derive biological truth from generic material definitions.
+The environment provider supplies model parameters. It does not automatically derive physical truth from generic material definitions.
 
 ---
 
@@ -664,7 +715,7 @@ public:
 };
 ```
 
-Physics execution must not branch into failure because truth output is absent.
+Physics execution must not fail because optional truth output is absent.
 
 ---
 
@@ -709,16 +760,18 @@ struct PsAnnihilationRecord {
 Potential additional fields may include:
 
 * annihilation index within event;
-* source event identifier;
+* source-event identifier;
 * positron terminal kinetic energy;
 * photon energies;
 * photon directions;
 * photon polarizations;
 * environment identifier;
 * provider identifier;
-* random-seed metadata.
+* random-seed metadata;
+* handoff status;
+* user-defined annotations.
 
-The public record should not require a particular file format.
+The public record must not require a particular file format.
 
 CSV, ROOT, HDF5, JSON, database, or application-specific output should be implemented by optional recorder components.
 
@@ -736,12 +789,16 @@ std::vector<PsAnnihilationRecord>
 
 rather than assuming only one annihilation record per event.
 
-Existing single-annihilation convenience fields may be preserved temporarily for compatibility, but new integration design must not prevent:
+The design must not prevent:
 
 * multiple positron primaries;
 * radioactive decay chains;
+* secondary positron production;
 * pileup studies;
-* multi-source events.
+* multi-source events;
+* accelerator events with multiple positrons.
+
+Existing single-annihilation convenience fields may be preserved temporarily for compatibility.
 
 ---
 
@@ -761,7 +818,7 @@ Conceptual metadata may include:
 
 Photon-level metadata must be optional.
 
-The generated photons must remain transportable even when no custom track information is attached.
+The generated photons must remain transportable and physically valid when no custom track information is attached.
 
 ---
 
@@ -772,7 +829,7 @@ The PsSource physics constructor must safely replace terminal positron annihilat
 It must:
 
 1. locate the existing positron annihilation process;
-2. verify the process configuration is compatible;
+2. verify that the process configuration is compatible;
 3. remove or replace the native terminal at-rest implementation;
 4. register the PsSource replacement;
 5. preserve required process ordering;
@@ -802,7 +859,7 @@ Changes that would break ordinary creator-process filtering should be avoided un
 
 ## 21. In-Flight Annihilation
 
-The public contract distinguishes terminal at-rest Ps modeling from in-flight annihilation.
+The public contract distinguishes terminal at-rest positronium modeling from in-flight annihilation.
 
 PsSource is intended to replace terminal at-rest annihilation.
 
@@ -824,7 +881,7 @@ enum class PsHandoffStatus {
 };
 ```
 
-This status is illustrative and is not yet a frozen public enum.
+This enum is illustrative and is not yet a frozen public interface.
 
 Dedicated in-flight validation is required before broad production claims are made.
 
@@ -845,7 +902,7 @@ For each PsSource-generated photon:
 
 The two-photon final state must satisfy:
 
-* two photons;
+* exactly two photons;
 * energy consistent with the selected model;
 * back-to-back directions for annihilation at rest;
 * momentum closure;
@@ -856,7 +913,7 @@ The two-photon final state must satisfy:
 
 The three-photon final state must satisfy:
 
-* three photons;
+* exactly three photons;
 * positive individual photon energies;
 * total energy conservation;
 * vector momentum closure;
@@ -864,6 +921,8 @@ The three-photon final state must satisfy:
 * common birth time;
 * common birth position;
 * model-specific distributional behavior.
+
+Conservation checks alone do not establish physical correctness. Validated backends must also reproduce the intended physical distribution.
 
 ---
 
@@ -913,9 +972,9 @@ The current release does not model:
 * positronium thermal motion;
 * positronium displacement during lifetime;
 * formation before terminal positron rest;
-* material-dependent Ps transport range.
+* material-dependent positronium transport range.
 
-Any future spatial Ps model must be added explicitly and must not silently alter the current terminal-position semantics.
+Any future spatial positronium model must be added explicitly and must not silently alter the current terminal-position semantics.
 
 ---
 
@@ -925,16 +984,18 @@ Polarization support is model-dependent.
 
 When polarization is not generated:
 
-* the photon should remain valid for ordinary Geant4 transport;
-* truth should indicate that polarization is not valid or not assigned;
-* zero-vector placeholders must not be misrepresented as physical polarization.
+* the photon must remain valid for ordinary Geant4 transport;
+* truth must indicate that polarization is not valid or not assigned;
+* zero-vector placeholders must not be represented as physical polarization.
 
 When polarization is generated:
 
 * the polarization vector must be normalized as required;
 * the polarization vector must be transverse to the photon direction;
 * model-specific polarization validation must pass;
-* truth should identify polarization as valid.
+* truth must identify polarization as valid.
+
+The initial public contract does not require magnetic-substate-resolved control.
 
 ---
 
@@ -949,28 +1010,54 @@ Each realized PsSource annihilation should expose, through optional truth, model
 * environment provider;
 * relevant configuration identifier.
 
-Example conceptual values:
-
-```text
-model_name
-model_version
-validation_status
-```
-
 Provenance should distinguish:
 
-* approximate controlled-source models;
+* approximate controlled models;
 * validated Ore–Powell models;
 * polarized models;
-* future environment-dependent models.
+* future material-dependent models;
+* user-defined backends.
 
-The implementation must not label an approximate model as fully validated physical Ore–Powell generation.
+The implementation must not label an approximate model as a validated physical Ore–Powell implementation.
 
 ---
 
-## 27. Error Handling
+## 27. User-Defined Models
 
-### 27.1 Initialization Errors
+The public architecture should allow future user-defined physics models without requiring changes to the Geant4 process layer.
+
+A conceptual interface is:
+
+```cpp
+class IPsPhysicsModel {
+public:
+    virtual ~IPsPhysicsModel() = default;
+
+    virtual PsModelResult Sample(
+        const PsEnvironment& environment
+    ) const = 0;
+
+    virtual std::string Name() const = 0;
+    virtual std::string Version() const = 0;
+    virtual std::string ValidationStatus() const = 0;
+};
+```
+
+User-defined models must return physically and structurally valid results.
+
+The integration layer must remain responsible for validating:
+
+* photon multiplicity;
+* energy positivity;
+* direction normalization;
+* timing validity;
+* model provenance.
+
+---
+
+## 28. Error Handling
+
+### 28.1 Initialization Errors
 
 Fatal initialization errors should be used for:
 
@@ -981,15 +1068,17 @@ Fatal initialization errors should be used for:
 * incompatible physics-list configuration;
 * duplicate annihilation process;
 * missing required annihilation process;
-* unsupported process replacement state.
+* unsupported process replacement state;
+* null required provider;
+* invalid ownership configuration.
 
-### 27.2 Event-Time Errors
+### 28.2 Event-Time Errors
 
 Event-time fatal errors should be reserved for conditions that indicate corrupted physics state or impossible execution.
 
 The absence of optional truth must not be an error.
 
-### 27.3 Diagnostic Quality
+### 28.3 Diagnostic Quality
 
 Errors should identify:
 
@@ -1000,7 +1089,7 @@ Errors should identify:
 
 ---
 
-## 28. Initialization Diagnostics
+## 29. Initialization Diagnostics
 
 When PsSource is enabled, initialization should emit a concise summary once.
 
@@ -1029,13 +1118,13 @@ Multithreaded initialization should avoid redundant worker output where practica
 
 ---
 
-## 29. Backward Compatibility
+## 30. Backward Compatibility
 
 The integration refactor must preserve existing validated behavior.
 
 The following should remain supported unless explicitly deprecated:
 
-* explicit source-generation mode;
+* explicit event-generation mode;
 * transport-coupled mode;
 * approximate three-photon backend;
 * Ore–Powell backend;
@@ -1053,19 +1142,20 @@ Any intentional physics change must include:
 * documented rationale;
 * new validation;
 * updated provenance;
-* updated version identifier.
+* updated model version.
 
 ---
 
-## 30. Existing Application Compatibility
+## 31. Existing Application Compatibility
 
 The current PsSource reference applications may continue to provide:
 
-* CLI configuration;
+* command-line configuration;
 * CSV truth output;
 * detector-hit output;
 * validation hooks;
-* regression data.
+* regression data;
+* PET-oriented examples.
 
 These application-level features are not mandatory dependencies of the reusable library.
 
@@ -1075,11 +1165,12 @@ The reusable library must not require:
 * current CSV writers;
 * current event-action implementation;
 * current tracking-action implementation;
-* current detector geometry.
+* current detector geometry;
+* current PET-specific examples.
 
 ---
 
-## 31. Build and Packaging Contract
+## 32. Build and Packaging Contract
 
 The reusable PsSource component should become a library target.
 
@@ -1095,7 +1186,7 @@ External applications should eventually be able to use:
 find_package(PsSource REQUIRED)
 
 target_link_libraries(
-    my_pet_application
+    my_geant4_application
     PRIVATE
     PsSource::PsSource
 )
@@ -1114,7 +1205,7 @@ Application-specific validators and regression scripts need not be installed as 
 
 ---
 
-## 32. Public Header Boundaries
+## 33. Public Header Boundaries
 
 Public headers should expose only stable integration concepts.
 
@@ -1130,6 +1221,7 @@ PsTerminalState.hh
 PsTruthRecorder.hh
 PsAnnihilationRecord.hh
 PsClass.hh
+PsPhysicsModel.hh
 ```
 
 Application-specific headers should remain private.
@@ -1139,11 +1231,12 @@ Public headers must not depend on:
 * current CSV schemas;
 * current command-line parser;
 * current detector classes;
+* PET-specific classes;
 * current validation scripts.
 
 ---
 
-## 33. Ownership and Lifetime
+## 34. Ownership and Lifetime
 
 The public API must document ownership for:
 
@@ -1165,7 +1258,7 @@ Raw-pointer ownership ambiguity should be avoided.
 
 ---
 
-## 34. Thread Safety
+## 35. Thread Safety
 
 The reusable implementation must be compatible with Geant4 multithreading.
 
@@ -1180,8 +1273,8 @@ The design should avoid:
 Preferred behavior:
 
 * immutable shared configuration;
-* worker-local process/model state;
-* Geant4 random engine use;
+* worker-local process and model state;
+* Geant4 random-engine use;
 * thread-local or synchronized optional truth output;
 * documented reproducibility behavior.
 
@@ -1191,7 +1284,7 @@ Bitwise-identical event ordering across thread counts is not required.
 
 ---
 
-## 35. Randomness and Reproducibility
+## 36. Randomness and Reproducibility
 
 All stochastic sampling should use the Geant4-compatible random-number system.
 
@@ -1200,11 +1293,12 @@ The implementation should not introduce an unrelated hidden random engine.
 Run metadata should allow recording:
 
 * seed;
-* engine;
+* random engine;
 * event count;
 * model version;
 * configuration;
-* thread count.
+* thread count;
+* Geant4 version.
 
 Reproducibility expectations should be documented separately for:
 
@@ -1214,7 +1308,7 @@ Reproducibility expectations should be documented separately for:
 
 ---
 
-## 36. Versioning Policy
+## 37. Versioning Policy
 
 PsSource will follow semantic versioning after the first stable external integration release.
 
@@ -1265,7 +1359,7 @@ Before version 1.0, public interfaces may evolve, but changes must be documented
 
 ---
 
-## 37. Supported Geant4 Versions
+## 38. Supported Geant4 Versions
 
 The initial supported Geant4 version is the version used for validated development and regression testing.
 
@@ -1285,7 +1379,7 @@ Support documentation should distinguish:
 
 ---
 
-## 38. Non-Goals for the Initial Drop-In Release
+## 39. Non-Goals for the Initial Drop-In Release
 
 The following are not part of the initial external integration release:
 
@@ -1295,22 +1389,24 @@ The following are not part of the initial external integration release:
 * in-flight Ps formation;
 * formation before positron terminal rest;
 * magnetic-substate-resolved control;
-* automatic biological inference from material composition;
-* patient-specific Ps parameter estimation;
+* automatic physical inference from generic material composition;
 * automatic tissue classification;
+* patient-specific parameter estimation;
 * native GATE plugin;
 * detector electronics;
 * digitization;
+* trigger logic;
 * coincidence sorting;
 * reconstruction;
 * image analysis;
-* pharmacokinetic modeling.
+* spectroscopy analysis;
+* experiment-specific event selection.
 
 These may be addressed in future research or extension layers.
 
 ---
 
-## 39. Scientific Limitations
+## 40. Scientific Limitations
 
 The current transport-coupled model represents Ps formation and annihilation at the transported positron terminal state.
 
@@ -1320,6 +1416,7 @@ It does not currently model:
 * Ps diffusion during the sampled lifetime;
 * formation while the positron is still in flight;
 * chemistry-driven Ps formation mechanisms;
+* material-dependent collision or quenching dynamics;
 * magnetic-substate evolution;
 * external-field effects unless provided by a specific future model.
 
@@ -1329,11 +1426,11 @@ They are not automatically inferred from Geant4 material composition.
 
 ---
 
-## 40. Acceptance Tests
+## 41. Acceptance Tests
 
 The public integration contract is considered implemented only when the following tests pass.
 
-### 40.1 Native-Off Test
+### 41.1 Native-Off Test
 
 Configuration:
 
@@ -1348,7 +1445,7 @@ Expected:
 * no PsSource truth appears;
 * host application runs normally.
 
-### 40.2 PsSource-On Test
+### 41.2 PsSource-On Test
 
 Configuration:
 
@@ -1361,9 +1458,9 @@ Expected:
 * terminal at-rest annihilation uses PsSource;
 * one annihilation process remains active;
 * generated photons are ordinary Geant4 tracks;
-* host detector scoring is unchanged.
+* host scoring and downstream processing remain unchanged.
 
-### 40.3 No-Truth Test
+### 41.3 No-Truth Test
 
 Configuration:
 
@@ -1379,7 +1476,7 @@ Expected:
 * physics output remains valid;
 * no fatal truth-related error occurs.
 
-### 40.4 Truth-Enabled Test
+### 41.4 Truth-Enabled Test
 
 Configuration:
 
@@ -1391,32 +1488,47 @@ Optional truth recorder enabled
 Expected:
 
 * truth record is complete;
-* physics matches no-truth run statistically;
-* recorder does not change physics.
+* physics matches the no-truth run statistically;
+* recorder does not alter physics.
 
-### 40.5 Source-Independence Test
+### 41.5 Source-Independence Test
 
 Test with at least:
 
 * custom primary generator;
-* GPS;
-* realistic positron spectrum or radioactive decay.
+* `G4GeneralParticleSource`;
+* realistic positron spectrum, radioactive decay, or accelerator-produced positron source.
 
 Expected:
 
 * no source-specific PsSource dependency;
 * terminal handoff remains valid.
 
-### 40.6 Detector-Independence Test
+### 41.6 Geometry-Independence Test
 
-Use at least two different detector/scoring configurations.
+Test with at least two geometrically distinct host applications.
+
+Examples may include:
+
+* imaging geometry;
+* simple material target;
+* beamline or spectroscopy geometry.
+
+Expected:
+
+* no PsSource geometry dependency;
+* generated photons interact normally.
+
+### 41.7 Detector-Independence Test
+
+Use at least two different scoring or detector configurations.
 
 Expected:
 
 * PsSource integration does not require detector changes;
-* generated photons interact normally.
+* generated photons are handled through ordinary Geant4 tracking.
 
-### 40.7 Deterministic Transport Tests
+### 41.8 Deterministic Transport Tests
 
 Required cases:
 
@@ -1436,7 +1548,7 @@ Validate:
 * energy closure;
 * momentum closure.
 
-### 40.8 Statistical Delay Tests
+### 41.9 Statistical Delay Tests
 
 Required cases:
 
@@ -1451,7 +1563,7 @@ Validate:
 * exponential-distribution agreement;
 * event-by-event timing decomposition.
 
-### 40.9 In-Flight Test
+### 41.10 In-Flight Test
 
 Expected:
 
@@ -1460,7 +1572,7 @@ Expected:
 * no Ps class is falsely assigned;
 * no duplicate terminal photons are produced.
 
-### 40.10 Multithreading Test
+### 41.11 Multithreading Test
 
 Run with:
 
@@ -1475,7 +1587,7 @@ Validate:
 * no duplicate truth;
 * statistically consistent results.
 
-### 40.11 Installed-Consumer Test
+### 41.12 Installed-Consumer Test
 
 Procedure:
 
@@ -1493,13 +1605,13 @@ Expected:
 
 ---
 
-## 41. Reference External Integration Example
+## 42. Reference External Integration Examples
 
-The repository should include an external-style demonstration application.
+The repository should include at least one minimal external-style Geant4 demonstration application.
 
 The example should contain:
 
-* simple Geant4 geometry;
+* simple geometry;
 * independent positron source;
 * independent scoring;
 * reference physics list;
@@ -1527,15 +1639,22 @@ The example must not require:
 * current detector geometry;
 * current timing application.
 
-This example is the primary proof that PsSource can be integrated into an existing Geant4 application.
+A second application-domain example may later demonstrate:
+
+* PET or QEPET integration;
+* accelerator-target integration;
+* positron-beam material studies;
+* spectroscopy geometry.
+
+The minimal example is the primary proof that PsSource can be integrated into an existing Geant4 application.
 
 ---
 
-## 42. QEPET Compatibility Goal
+## 43. PET and QEPET Compatibility Goal
 
-PsSource should be usable as the annihilation layer in a QEPET simulation without modifying QEPET detector physics.
+PET is an important target application but not a software requirement.
 
-Expected QEPET workflow:
+Expected PET workflow:
 
 ```text
 positron or radionuclide source
@@ -1546,27 +1665,68 @@ PsSource terminal annihilation
         ↓
 Geant4 photon transport
         ↓
-QEPET scintillator interactions
+detector interactions
         ↓
 optical or parameterized detector response
         ↓
-SiPM/electronics model
+digitization
         ↓
 coincidence processing
+        ↓
+reconstruction
 ```
 
-PsSource does not own QEPET-specific:
+PsSource does not own PET-specific:
 
-* geometry;
+* scanner geometry;
 * scintillation;
 * optical transport;
 * SiPM response;
 * electronics;
+* coincidence processing;
 * reconstruction.
+
+For QEPET, PsSource should operate only as the annihilation-physics layer upstream of the existing detector simulation.
 
 ---
 
-## 43. Documentation Requirements
+## 44. Accelerator and Fundamental-Physics Compatibility Goal
+
+PsSource should also support non-imaging Geant4 applications.
+
+An accelerator or positron-beam workflow may be:
+
+```text
+beam or secondary positron production
+        ↓
+beamline and target transport
+        ↓
+positron terminal state
+        ↓
+PsSource terminal annihilation
+        ↓
+Geant4 photon transport
+        ↓
+calorimeter, spectroscopy, or tracking detector
+        ↓
+experiment-specific analysis
+```
+
+PsSource does not own:
+
+* beam generation;
+* accelerator optics;
+* target geometry;
+* detector geometry;
+* trigger logic;
+* experiment-specific reconstruction;
+* particle-identification logic.
+
+The software contract is therefore broader than PET even when PET remains the principal initial scientific demonstration.
+
+---
+
+## 45. Documentation Requirements
 
 The public release documentation should include:
 
@@ -1581,18 +1741,20 @@ The public release documentation should include:
 * supported Geant4 versions;
 * regression commands;
 * minimal external example;
-* model provenance explanation.
+* model-provenance explanation.
 
 Documentation must clearly distinguish:
 
-* explicit source mode;
+* explicit event-generation mode;
 * transport-coupled mode.
 
 Transport-coupled mode should be presented as the reusable integration pathway.
 
+PET examples should be identified as application examples rather than software requirements.
+
 ---
 
-## 44. Contract Review Questions
+## 46. Contract Review Questions
 
 Before code changes are accepted, reviewers should be able to answer the following from this document.
 
@@ -1606,6 +1768,7 @@ Before code changes are accepted, reviewers should be able to answer the followi
 
 * What does PsSource own?
 * What does the host application retain?
+* Is the software limited to PET? No.
 
 ### Handoff
 
@@ -1619,6 +1782,8 @@ Before code changes are accepted, reviewers should be able to answer the followi
 * Is the current detector required? No.
 * Is truth required? No.
 * Is the current timing application required? No.
+* Is a PET geometry required? No.
+* Is a radionuclide source required? No.
 
 ### Configuration
 
@@ -1630,7 +1795,7 @@ Before code changes are accepted, reviewers should be able to answer the followi
 
 * Is truth optional? Yes.
 * What is the minimum record?
-* Who controls output formatting? The host or optional recorder.
+* Who controls output formatting? The host application or optional recorder.
 
 ### Compatibility
 
@@ -1643,11 +1808,11 @@ Before code changes are accepted, reviewers should be able to answer the followi
 
 * Is Ps atom transport modeled? No.
 * Is in-flight Ps formation modeled? No.
-* Are biological parameters inferred from materials? No.
+* Are environment parameters inferred automatically from generic materials? No.
 
 ---
 
-## 45. Completion Criteria for Stage 1
+## 47. Completion Criteria for Stage 1
 
 Stage 1 is complete when:
 
@@ -1655,23 +1820,23 @@ Stage 1 is complete when:
 2. the public responsibility boundary is accepted;
 3. the transport handoff is accepted;
 4. truth is explicitly defined as optional;
-5. source and detector independence are accepted;
-6. class numeric semantics are frozen;
-7. initial configuration concepts are accepted;
-8. non-goals are accepted;
-9. acceptance tests are agreed upon;
-10. no physics code has changed as part of this stage.
+5. source, geometry, and detector independence are accepted;
+6. PET is defined as an application domain rather than a software requirement;
+7. realized class numeric semantics are frozen;
+8. initial configuration concepts are accepted;
+9. non-goals are accepted;
+10. acceptance tests are agreed upon;
+11. no physics code has changed as part of this stage.
 
 The contract should then guide the next implementation milestone:
 
-> Remove mandatory application-specific truth dependencies and prove that PsSource runs inside a minimal external Geant4 host application with no PsSource-specific event infrastructure.
+> Remove mandatory application-specific truth dependencies and prove that PsSource runs inside a minimal external Geant4 host application with no PsSource-specific source, detector, event-action, or truth infrastructure.
 
 ---
 
-## 46. One-Sentence Product Contract
+## 48. One-Sentence Product Contract
 
-> PsSource is a modular Geant4 physics extension that can be registered in an existing application to replace terminal at-rest positron annihilation with configurable, validated positronium final-state modeling while leaving the host source, geometry, transport, detector scoring, digitization, and reconstruction unchanged.
+> PsSource is a modular Geant4 physics extension that can be registered in an existing application to replace terminal at-rest positron annihilation with configurable, validated positronium final-state modeling while leaving the host source, geometry, transport, scoring, detector response, analysis, and output infrastructure unchanged.
 
-```
-```
+PET is the principal initial application and validation domain, but PsSource is intended for arbitrary Geant4 applications involving transported positrons.
 
