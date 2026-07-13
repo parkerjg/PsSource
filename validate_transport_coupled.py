@@ -106,6 +106,8 @@ def parse_args() -> argparse.Namespace:
             "pps-2g-fixed-delay",
             "ops-2g-fixed-delay",
             "ops-3g-fixed-delay",
+            "pps-2g-exponential",
+            "ops-3g-exponential",
         ],
         required=True,
         help="Transport regression case to validate.",
@@ -283,6 +285,27 @@ def position_difference(
         )
     )
 
+def exponential_ks_statistic(
+    values: list[float],
+    tau_ns: float,
+) -> float:
+    sorted_values = sorted(values)
+    sample_count = len(sorted_values)
+    maximum_difference = 0.0
+
+    for index, value in enumerate(sorted_values, start=1):
+        theoretical_cdf = 1.0 - math.exp(-value / tau_ns)
+
+        lower_empirical_cdf = (index - 1) / sample_count
+        upper_empirical_cdf = index / sample_count
+
+        maximum_difference = max(
+            maximum_difference,
+            abs(theoretical_cdf - lower_empirical_cdf),
+            abs(upper_empirical_cdf - theoretical_cdf),
+        )
+
+    return maximum_difference
 
 def validate_deterministic_2g(
     summary_rows: dict[int, dict[str, Any]],
@@ -978,6 +1001,207 @@ def validate_deterministic_3g(
         "failures": failures,
     }
 
+def validate_exponential_delay(
+    summary_rows: dict[int, dict[str, Any]],
+    gamma_groups: dict[int, list[dict[str, Any]]],
+    expected_events: int,
+    case_name: str,
+    expected_tau_ns: float,
+    expected_ps_class_id: int,
+    expected_mode: int,
+    expected_gamma_count: int,
+) -> dict[str, Any]:
+    failures: list[str] = []
+
+    summary_tolerance = 2.0e-6
+    coefficient_of_variation_tolerance = 0.05
+    mean_standard_error_limit = 5.0
+
+    if len(summary_rows) != expected_events:
+        failures.append(
+            f"Expected {expected_events} summary events, "
+            f"found {len(summary_rows)}"
+        )
+
+    if set(summary_rows) != set(gamma_groups):
+        missing_gamma_events = sorted(
+            set(summary_rows) - set(gamma_groups)
+        )
+        extra_gamma_events = sorted(
+            set(gamma_groups) - set(summary_rows)
+        )
+
+        if missing_gamma_events:
+            failures.append(
+                "Summary events missing photon rows: "
+                f"{missing_gamma_events}"
+            )
+
+        if extra_gamma_events:
+            failures.append(
+                "Photon events missing summary rows: "
+                f"{extra_gamma_events}"
+            )
+
+    delays: list[float] = []
+    maximum_timing_decomposition_error = 0.0
+    negative_delay_count = 0
+    total_gamma_rows = 0
+
+    for event_id, summary in sorted(summary_rows.items()):
+        gammas = gamma_groups.get(event_id, [])
+        total_gamma_rows += len(gammas)
+
+        if summary["annihilation_found"] != 1:
+            failures.append(
+                f"Event {event_id}: annihilation_found != 1"
+            )
+
+        if summary["ps_class_id"] != expected_ps_class_id:
+            failures.append(
+                f"Event {event_id}: ps_class_id "
+                f"{summary['ps_class_id']} does not match "
+                f"expected {expected_ps_class_id}"
+            )
+
+        if summary["annihilation_mode"] != expected_mode:
+            failures.append(
+                f"Event {event_id}: annihilation_mode "
+                f"{summary['annihilation_mode']} does not match "
+                f"expected {expected_mode}"
+            )
+
+        if summary["n_annihilation_gammas"] != expected_gamma_count:
+            failures.append(
+                f"Event {event_id}: n_annihilation_gammas "
+                f"{summary['n_annihilation_gammas']} does not match "
+                f"expected {expected_gamma_count}"
+            )
+
+        if len(gammas) != expected_gamma_count:
+            failures.append(
+                f"Event {event_id}: expected "
+                f"{expected_gamma_count} photon rows, "
+                f"found {len(gammas)}"
+            )
+
+        if summary["has_prompt_gamma"] != 0:
+            failures.append(
+                f"Event {event_id}: unexpected prompt gamma"
+            )
+
+        delay_ns = summary["sampled_ps_delay_ns"]
+        delays.append(delay_ns)
+
+        if delay_ns < 0.0:
+            negative_delay_count += 1
+            failures.append(
+                f"Event {event_id}: sampled Ps delay is negative"
+            )
+
+        expected_time_ns = (
+            summary["positron_terminal_time_ns"] + delay_ns
+        )
+
+        timing_error = abs(
+            summary["annihilation_time_ns"] - expected_time_ns
+        )
+
+        maximum_timing_decomposition_error = max(
+            maximum_timing_decomposition_error,
+            timing_error,
+        )
+
+        if timing_error > summary_tolerance:
+            failures.append(
+                f"Event {event_id}: timing decomposition failed"
+            )
+
+        if summary["positron_terminal_time_ns"] <= 0.0:
+            failures.append(
+                f"Event {event_id}: terminal time is not positive"
+            )
+
+        if summary["positron_range_mm"] <= 0.0:
+            failures.append(
+                f"Event {event_id}: positron displacement is not positive"
+            )
+
+    sample_count = len(delays)
+
+    mean_delay_ns = sum(delays) / sample_count
+
+    variance_ns2 = sum(
+        (value - mean_delay_ns) ** 2
+        for value in delays
+    ) / sample_count
+
+    standard_deviation_ns = math.sqrt(variance_ns2)
+
+    coefficient_of_variation = (
+        standard_deviation_ns / mean_delay_ns
+    )
+
+    standard_error_ns = expected_tau_ns / math.sqrt(sample_count)
+
+    mean_z_score = (
+        mean_delay_ns - expected_tau_ns
+    ) / standard_error_ns
+
+    if abs(mean_z_score) > mean_standard_error_limit:
+        failures.append(
+            f"Mean delay z-score {mean_z_score:.6f} exceeds "
+            f"limit {mean_standard_error_limit:.1f}"
+        )
+
+    if abs(coefficient_of_variation - 1.0) > (
+        coefficient_of_variation_tolerance
+    ):
+        failures.append(
+            f"Coefficient of variation "
+            f"{coefficient_of_variation:.6f} is not within "
+            f"{coefficient_of_variation_tolerance:.3f} of 1"
+        )
+
+    ks_statistic = exponential_ks_statistic(
+        delays,
+        expected_tau_ns,
+    )
+
+    ks_limit = 1.63 / math.sqrt(sample_count)
+
+    if ks_statistic > ks_limit:
+        failures.append(
+            f"Exponential KS statistic {ks_statistic:.6f} "
+            f"exceeds limit {ks_limit:.6f}"
+        )
+
+    return {
+        "status": "PASS" if not failures else "FAIL",
+        "case": case_name,
+        "expected_events": expected_events,
+        "expected_tau_ns": expected_tau_ns,
+        "expected_ps_class_id": expected_ps_class_id,
+        "expected_annihilation_mode": expected_mode,
+        "expected_gamma_count": expected_gamma_count,
+        "summary_events": len(summary_rows),
+        "gamma_rows": total_gamma_rows,
+        "mean_delay_ns": mean_delay_ns,
+        "standard_deviation_ns": standard_deviation_ns,
+        "coefficient_of_variation": coefficient_of_variation,
+        "mean_z_score": mean_z_score,
+        "minimum_delay_ns": min(delays),
+        "maximum_delay_ns": max(delays),
+        "negative_delay_count": negative_delay_count,
+        "exponential_ks_statistic": ks_statistic,
+        "exponential_ks_limit": ks_limit,
+        "maximum_timing_decomposition_error_ns": (
+            maximum_timing_decomposition_error
+        ),
+        "failure_count": len(failures),
+        "failures": failures,
+    }
+
 def main() -> int:
     args = parse_args()
 
@@ -1009,6 +1233,21 @@ def main() -> int:
         },
     }
 
+    exponential_cases = {
+        "pps-2g-exponential": {
+            "tau_ns": 0.125,
+            "ps_class_id": 1,
+            "annihilation_mode": 2,
+            "gamma_count": 2,
+        },
+        "ops-3g-exponential": {
+            "tau_ns": 3.0,
+            "ps_class_id": 3,
+            "annihilation_mode": 3,
+            "gamma_count": 3,
+        },
+    }
+
     if args.case in deterministic_2g_cases:
         case_config = deterministic_2g_cases[args.case]
 
@@ -1031,6 +1270,20 @@ def main() -> int:
             args.case,
             case_config["delay_ns"],
             case_config["ps_class_id"],
+        )
+
+    elif args.case in exponential_cases:
+        case_config = exponential_cases[args.case]
+
+        result = validate_exponential_delay(
+            summary_rows,
+            gamma_groups,
+            args.expected_events,
+            args.case,
+            case_config["tau_ns"],
+            case_config["ps_class_id"],
+            case_config["annihilation_mode"],
+            case_config["gamma_count"],
         )
 
     else:
