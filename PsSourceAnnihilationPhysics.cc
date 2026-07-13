@@ -12,10 +12,13 @@
 #include "G4ios.hh"
 
 PsSourceAnnihilationPhysics::
-PsSourceAnnihilationPhysics()
+PsSourceAnnihilationPhysics(
+    const PsSourceAnnihilationConfig& config
+)
     : G4VPhysicsConstructor(
           "PsSourceAnnihilationPhysics"
-      )
+      ),
+      m_config(config)
 {
 }
 
@@ -115,7 +118,10 @@ ConstructProcess()
     delete removed_process;
 
     auto* replacement =
-        new PsSourceAnnihilationProcess("annihil");
+        new PsSourceAnnihilationProcess(
+            m_config,
+            "annihil"
+        );
 
     const G4bool registered =
         RegisterProcess(

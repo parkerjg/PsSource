@@ -119,17 +119,31 @@ PsModelResult OrePowellPsModel::Sample(
             direction.z()
         };
 
-        const G4ThreeVector polarization =
-            particle->GetPolarization();
+	if (
+	    m_polarization_mode ==
+	    PolarizationMode::Polarized
+	) {
+	    const G4ThreeVector polarization =
+		particle->GetPolarization();
 
-        photon.polarization = {
-            polarization.x(),
-            polarization.y(),
-            polarization.z()
-        };
+	    photon.polarization = {
+		polarization.x(),
+		polarization.y(),
+		polarization.z()
+	    };
 
-        photon.polarization_valid =
-            polarization.mag2() > 0.0;
+	    photon.polarization_valid =
+		polarization.mag2() > 0.0;
+	} else {
+	    photon.polarization = {
+		0.0,
+		0.0,
+		0.0
+	    };
+
+	    photon.polarization_valid =
+		false;
+	}
 
         result.photons.push_back(photon);
 

@@ -1,15 +1,20 @@
 #ifndef PS_SOURCE_ANNIHILATION_PROCESS_HH
 #define PS_SOURCE_ANNIHILATION_PROCESS_HH
 
+#include "PsSourceAnnihilationConfig.hh"
+#include "ConfigurablePsModel.hh"
+
 #include "G4eplusAnnihilation.hh"
 
 class G4Step;
 class G4Track;
 class G4VParticleChange;
 
-class PsSourceAnnihilationProcess : public G4eplusAnnihilation {
+class PsSourceAnnihilationProcess
+    : public G4eplusAnnihilation {
 public:
     explicit PsSourceAnnihilationProcess(
+        const PsSourceAnnihilationConfig& config,
         const G4String& name = "annihil"
     );
 
@@ -19,6 +24,10 @@ public:
         const G4Track& track,
         const G4Step& step
     ) override;
+
+private:
+    PsSourceAnnihilationConfig m_config;
+    ConfigurablePsModel m_model;
 };
 
 #endif

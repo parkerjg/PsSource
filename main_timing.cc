@@ -1024,8 +1024,48 @@ public:
         m_annihilation_gammas.clear();
     }
 
-    void EndOfEventAction(const G4Event*) override
+    void EndOfEventAction(const G4Event* event) override
     {
+
+        if (event) {
+            auto* truth =
+                dynamic_cast<PositroniumTruthInfo*>(
+                    event->GetUserInformation()
+                );
+
+            if (
+                truth &&
+                truth->declared_annihilation_valid
+            ) {
+                m_physics_model_name =
+                    truth->physics_model_name;
+
+                m_physics_model_version =
+                    truth->physics_model_version;
+
+                m_physics_validation_status =
+                    truth->physics_validation_status;
+
+                m_declared_annihilation_mode =
+                    truth->annihilation_mode;
+
+                m_declared_delay_ns =
+                    truth->delay_ns;
+
+                m_declared_ann_x_mm =
+                    truth->ann_x_mm;
+
+                m_declared_ann_y_mm =
+                    truth->ann_y_mm;
+
+                m_declared_ann_z_mm =
+                    truth->ann_z_mm;
+
+                m_explicit_truth_available =
+                    true;
+            }
+        }
+
         if (!m_annihilation_found && m_explicit_truth_available) {
             m_annihilation_found = true;
             m_annihilation_time_ns = m_declared_delay_ns;
@@ -1611,8 +1651,70 @@ int main(int argc, char** argv)
         opt.generation_mode ==
         GenerationModeChoice::TransportCoupled
     ) {
+        PsSourceAnnihilationConfig annihilation_config;
+
+        annihilation_config.environment.f_direct =
+            opt.f_direct;
+
+        annihilation_config.environment.f_pps =
+            opt.f_pps;
+
+        annihilation_config.environment.f_ops =
+            opt.f_ops;
+
+        annihilation_config.environment.tau_direct_ns =
+            0.0;
+
+        annihilation_config.environment.tau_pps_ns =
+            opt.tau_pps_ns;
+
+        annihilation_config.environment.tau_ops_ns =
+            opt.tau_ops_ns;
+
+        annihilation_config.environment.ops_3g_fraction =
+            opt.ortho_3g_fraction;
+
+        annihilation_config.environment.ops_2g_fraction =
+            1.0 - opt.ortho_3g_fraction;
+
+        annihilation_config.delay_mode =
+            (
+                opt.delay_mode ==
+                DelayModeChoice::Exponential
+            )
+                ? ConfigurablePsModel::DelayMode::Exponential
+                : ConfigurablePsModel::DelayMode::Fixed;
+
+        annihilation_config.fixed_delay_ns =
+            opt.fixed_delay_ns;
+
+        annihilation_config.enable_three_gamma =
+            true;
+
+        switch (opt.three_gamma_model) {
+            case ThreeGammaModelChoice::Approximate:
+                annihilation_config.three_gamma_model =
+                    ConfigurablePsModel::ThreeGammaModel::
+                        ApproximatePhaseSpace;
+                break;
+
+            case ThreeGammaModelChoice::OrePowell:
+                annihilation_config.three_gamma_model =
+                    ConfigurablePsModel::ThreeGammaModel::
+                        Geant4OrePowell;
+                break;
+
+            case ThreeGammaModelChoice::OrePowellPolarized:
+                annihilation_config.three_gamma_model =
+                    ConfigurablePsModel::ThreeGammaModel::
+                        Geant4PolarizedOrePowell;
+                break;
+        }
+
         physics->RegisterPhysics(
-            new PsSourceAnnihilationPhysics()
+            new PsSourceAnnihilationPhysics(
+                annihilation_config
+            )
         );
     }
 
