@@ -105,6 +105,7 @@ def parse_args() -> argparse.Namespace:
             "direct-2g-zero-delay",
             "pps-2g-fixed-delay",
             "ops-2g-fixed-delay",
+            "ops-3g-fixed-delay",
         ],
         required=True,
         help="Transport regression case to validate.",
@@ -615,6 +616,367 @@ def validate_deterministic_2g(
         "failures": failures,
     }
 
+def validate_deterministic_3g(
+    summary_rows: dict[int, dict[str, Any]],
+    gamma_groups: dict[int, list[dict[str, Any]]],
+    expected_events: int,
+    case_name: str,
+    expected_ps_delay_ns: float,
+    expected_ps_class_id: int,
+) -> dict[str, Any]:
+    failures: list[str] = []
+
+    summary_tolerance = 1.0e-6
+    gamma_tolerance = 1.0e-9
+    energy_tolerance_mev = 1.0e-9
+    direction_tolerance = 1.0e-9
+    momentum_tolerance_mev = 1.0e-9
+
+    expected_total_energy_mev = 2.0 * ELECTRON_MASS_MEV
+
+    if len(summary_rows) != expected_events:
+        failures.append(
+            f"Expected {expected_events} summary events, "
+            f"found {len(summary_rows)}"
+        )
+
+    if set(summary_rows) != set(gamma_groups):
+        missing_gamma_events = sorted(
+            set(summary_rows) - set(gamma_groups)
+        )
+        extra_gamma_events = sorted(
+            set(gamma_groups) - set(summary_rows)
+        )
+
+        if missing_gamma_events:
+            failures.append(
+                "Summary events missing photon rows: "
+                f"{missing_gamma_events}"
+            )
+
+        if extra_gamma_events:
+            failures.append(
+                "Photon events missing summary rows: "
+                f"{extra_gamma_events}"
+            )
+
+    maximum_energy_sum_error = 0.0
+    maximum_direction_norm_error = 0.0
+    maximum_momentum_closure_mev = 0.0
+    maximum_gamma_time_difference = 0.0
+    maximum_gamma_position_difference = 0.0
+    maximum_summary_time_difference = 0.0
+    maximum_summary_position_difference = 0.0
+
+    total_gamma_rows = 0
+
+    for event_id, summary in sorted(summary_rows.items()):
+        gammas = gamma_groups.get(event_id, [])
+        total_gamma_rows += len(gammas)
+
+        if summary["annihilation_found"] != 1:
+            failures.append(
+                f"Event {event_id}: annihilation_found != 1"
+            )
+
+        if summary["ps_class_id"] != expected_ps_class_id:
+            failures.append(
+                f"Event {event_id}: ps_class_id "
+                f"{summary['ps_class_id']} does not match "
+                f"expected {expected_ps_class_id}"
+            )
+
+        if summary["annihilation_mode"] != 3:
+            failures.append(
+                f"Event {event_id}: annihilation_mode != 3"
+            )
+
+        if summary["n_annihilation_gammas"] != 3:
+            failures.append(
+                f"Event {event_id}: n_annihilation_gammas != 3"
+            )
+
+        if summary["has_prompt_gamma"] != 0:
+            failures.append(
+                f"Event {event_id}: unexpected prompt gamma"
+            )
+
+        ps_delay_error = abs(
+            summary["sampled_ps_delay_ns"]
+            - expected_ps_delay_ns
+        )
+
+        if ps_delay_error > summary_tolerance:
+            failures.append(
+                f"Event {event_id}: sampled Ps delay "
+                f"{summary['sampled_ps_delay_ns']} ns does not match "
+                f"expected {expected_ps_delay_ns} ns"
+            )
+
+        expected_summary_time = (
+            summary["positron_terminal_time_ns"]
+            + summary["sampled_ps_delay_ns"]
+        )
+
+        summary_time_difference = abs(
+            summary["annihilation_time_ns"]
+            - expected_summary_time
+        )
+
+        maximum_summary_time_difference = max(
+            maximum_summary_time_difference,
+            summary_time_difference,
+        )
+
+        if summary_time_difference > summary_tolerance:
+            failures.append(
+                f"Event {event_id}: summary timing decomposition failed"
+            )
+
+        if summary["positron_terminal_time_ns"] <= 0.0:
+            failures.append(
+                f"Event {event_id}: terminal time is not positive"
+            )
+
+        if summary["positron_range_mm"] <= 0.0:
+            failures.append(
+                f"Event {event_id}: positron displacement is not positive"
+            )
+
+        expected_provenance = (
+            "ConfigurablePsModel/ApproximatePhaseSpace",
+            "1.0",
+            "approximate-controlled-source-model",
+        )
+
+        actual_provenance = (
+            summary["physics_model_name"],
+            summary["physics_model_version"],
+            summary["physics_validation_status"],
+        )
+
+        if actual_provenance != expected_provenance:
+            failures.append(
+                f"Event {event_id}: unexpected provenance "
+                f"{actual_provenance}"
+            )
+
+        if len(gammas) != 3:
+            failures.append(
+                f"Event {event_id}: expected 3 photon rows, "
+                f"found {len(gammas)}"
+            )
+            continue
+
+        reference_gamma = gammas[0]
+
+        track_ids = {
+            gamma["track_id"]
+            for gamma in gammas
+        }
+
+        if len(track_ids) != 3:
+            failures.append(
+                f"Event {event_id}: photon track IDs are not unique"
+            )
+
+        parent_ids = {
+            gamma["parent_id"]
+            for gamma in gammas
+        }
+
+        if len(parent_ids) != 1:
+            failures.append(
+                f"Event {event_id}: photon parent IDs disagree"
+            )
+        elif next(iter(parent_ids)) <= 0:
+            failures.append(
+                f"Event {event_id}: photon parent_id is not positive"
+            )
+
+        total_energy_mev = 0.0
+        momentum_sum = [0.0, 0.0, 0.0]
+
+        for index, gamma in enumerate(gammas, start=1):
+            if gamma["source_event_id"] != summary["source_event_id"]:
+                failures.append(
+                    f"Event {event_id}: photon {index} "
+                    "source_event_id mismatch"
+                )
+
+            if gamma["creator_process"] != "annihil":
+                failures.append(
+                    f"Event {event_id}: photon {index} "
+                    "creator process is not annihil"
+                )
+
+            gamma_time_difference = abs(
+                gamma["vertex_time_ns"]
+                - reference_gamma["vertex_time_ns"]
+            )
+
+            maximum_gamma_time_difference = max(
+                maximum_gamma_time_difference,
+                gamma_time_difference,
+            )
+
+            if gamma_time_difference > gamma_tolerance:
+                failures.append(
+                    f"Event {event_id}: photon birth times disagree"
+                )
+
+            gamma_position_difference = position_difference(
+                gamma["position_mm"],
+                reference_gamma["position_mm"],
+            )
+
+            maximum_gamma_position_difference = max(
+                maximum_gamma_position_difference,
+                gamma_position_difference,
+            )
+
+            if gamma_position_difference > gamma_tolerance:
+                failures.append(
+                    f"Event {event_id}: photon birth positions disagree"
+                )
+
+            direction_norm_error = abs(
+                norm(gamma["direction"]) - 1.0
+            )
+
+            maximum_direction_norm_error = max(
+                maximum_direction_norm_error,
+                direction_norm_error,
+            )
+
+            if direction_norm_error > direction_tolerance:
+                failures.append(
+                    f"Event {event_id}: photon {index} direction "
+                    "is not normalized"
+                )
+
+            energy_mev = gamma["kinetic_energy_MeV"]
+
+            if energy_mev <= 0.0:
+                failures.append(
+                    f"Event {event_id}: photon {index} "
+                    "energy is not positive"
+                )
+
+            if energy_mev > ELECTRON_MASS_MEV + energy_tolerance_mev:
+                failures.append(
+                    f"Event {event_id}: photon {index} "
+                    "energy exceeds the 3-gamma kinematic limit"
+                )
+
+            total_energy_mev += energy_mev
+
+            for axis in range(3):
+                momentum_sum[axis] += (
+                    energy_mev * gamma["direction"][axis]
+                )
+
+            if gamma["polarization_valid"] != 0:
+                failures.append(
+                    f"Event {event_id}: photon {index} unexpectedly "
+                    "has valid polarization"
+                )
+
+            if norm(gamma["polarization"]) > gamma_tolerance:
+                failures.append(
+                    f"Event {event_id}: photon {index} has nonzero "
+                    "polarization"
+                )
+
+        energy_sum_error = abs(
+            total_energy_mev - expected_total_energy_mev
+        )
+
+        maximum_energy_sum_error = max(
+            maximum_energy_sum_error,
+            energy_sum_error,
+        )
+
+        if energy_sum_error > energy_tolerance_mev:
+            failures.append(
+                f"Event {event_id}: three-photon energy sum mismatch"
+            )
+
+        momentum_closure_mev = norm(
+            (
+                momentum_sum[0],
+                momentum_sum[1],
+                momentum_sum[2],
+            )
+        )
+
+        maximum_momentum_closure_mev = max(
+            maximum_momentum_closure_mev,
+            momentum_closure_mev,
+        )
+
+        if momentum_closure_mev > momentum_tolerance_mev:
+            failures.append(
+                f"Event {event_id}: three-photon momentum does not close"
+            )
+
+        summary_gamma_time_difference = abs(
+            reference_gamma["vertex_time_ns"]
+            - summary["annihilation_time_ns"]
+        )
+
+        maximum_summary_time_difference = max(
+            maximum_summary_time_difference,
+            summary_gamma_time_difference,
+        )
+
+        if summary_gamma_time_difference > summary_tolerance:
+            failures.append(
+                f"Event {event_id}: photon and summary times disagree"
+            )
+
+        summary_position_difference = position_difference(
+            reference_gamma["position_mm"],
+            summary["position_mm"],
+        )
+
+        maximum_summary_position_difference = max(
+            maximum_summary_position_difference,
+            summary_position_difference,
+        )
+
+        if summary_position_difference > summary_tolerance:
+            failures.append(
+                f"Event {event_id}: photon and summary positions disagree"
+            )
+
+    return {
+        "status": "PASS" if not failures else "FAIL",
+        "case": case_name,
+        "expected_events": expected_events,
+        "expected_ps_class_id": expected_ps_class_id,
+        "summary_events": len(summary_rows),
+        "gamma_rows": total_gamma_rows,
+        "maximum_energy_sum_error_MeV": maximum_energy_sum_error,
+        "maximum_direction_norm_error": maximum_direction_norm_error,
+        "maximum_momentum_closure_MeV_per_c": (
+            maximum_momentum_closure_mev
+        ),
+        "maximum_gamma_time_difference_ns": (
+            maximum_gamma_time_difference
+        ),
+        "maximum_gamma_position_difference_mm": (
+            maximum_gamma_position_difference
+        ),
+        "maximum_summary_time_difference_ns": (
+            maximum_summary_time_difference
+        ),
+        "maximum_summary_position_difference_mm": (
+            maximum_summary_position_difference
+        ),
+        "failure_count": len(failures),
+        "failures": failures,
+    }
 
 def main() -> int:
     args = parse_args()
@@ -640,6 +1002,13 @@ def main() -> int:
         },
     }
 
+    deterministic_3g_cases = {
+        "ops-3g-fixed-delay": {
+            "delay_ns": 3.0,
+            "ps_class_id": 3,
+        },
+    }
+
     if args.case in deterministic_2g_cases:
         case_config = deterministic_2g_cases[args.case]
 
@@ -651,6 +1020,19 @@ def main() -> int:
             case_config["delay_ns"],
             case_config["ps_class_id"],
         )
+
+    elif args.case in deterministic_3g_cases:
+        case_config = deterministic_3g_cases[args.case]
+
+        result = validate_deterministic_3g(
+            summary_rows,
+            gamma_groups,
+            args.expected_events,
+            args.case,
+            case_config["delay_ns"],
+            case_config["ps_class_id"],
+        )
+
     else:
         raise ValueError(f"Unsupported validation case: {args.case}")
 
