@@ -101,6 +101,65 @@ run_case()
     fi
 }
 
+run_no_truth_case()
+{
+    local directory_name="$1"
+    local validation_case="$2"
+
+    local run_dir="${RUN_ROOT}/${directory_name}"
+
+    echo
+    echo "============================================================"
+    echo "Case       : ${validation_case}"
+    echo "Events     : ${EVENT_COUNT}"
+    echo "Output     : ${run_dir}"
+    echo "============================================================"
+
+    mkdir -p "${run_dir}"
+
+    if ! (
+        cd "${run_dir}"
+
+        "${PS_TIMING}" \
+            --generation-mode transport-coupled \
+            --transport-no-truth \
+            --beam-on "${EVENT_COUNT}" \
+            --f-direct 1 \
+            --f-pps 0 \
+            --f-ops 0 \
+            --ortho-3g-fraction 0 \
+            --delay-mode fixed \
+            --fixed-delay-ns 0 \
+            --three-gamma-model approximate \
+            --prompt off \
+            --positron-range off \
+            --positron-kev 0.0001 \
+            > run.log 2>&1
+    ); then
+        echo
+        echo "Last 40 lines of run.log:" >&2
+        tail -n 40 "${run_dir}/run.log" >&2 || true
+        fail "Simulation failed for ${validation_case}"
+    fi
+
+    [[ -s "${run_dir}/annihilation_summary.csv" ]] ||
+        fail "Missing summary CSV for ${validation_case}"
+
+    [[ -s "${run_dir}/annihilation_gammas.csv" ]] ||
+        fail "Missing gamma CSV for ${validation_case}"
+
+    if ! python "${VALIDATOR}" \
+        "${run_dir}/annihilation_summary.csv" \
+        "${run_dir}/annihilation_gammas.csv" \
+        --case "${validation_case}" \
+        --expected-events "${EVENT_COUNT}" \
+        --json-out "${run_dir}/validation.json" \
+        2>&1 | tee "${run_dir}/validation.log"
+    then
+        fail "Validation failed for ${validation_case}"
+    fi
+}
+
 run_exponential_case()
 {
     local directory_name="$1"
@@ -170,6 +229,86 @@ run_case \
     "direct-2g-zero-delay" \
     1 0 0 0 0
 
+run_no_truth_case \
+    "direct_2g_zero_delay_no_truth" \
+    "direct-2g-zero-delay-no-truth"
+
+echo
+echo "Comparing truth-enabled and no-truth photon physics..."
+
+python - \
+    "${RUN_ROOT}/direct_2g_zero_delay/annihilation_gammas.csv" \
+    "${RUN_ROOT}/direct_2g_zero_delay_no_truth/annihilation_gammas.csv" \
+    <<'PY'
+import csv
+import sys
+from pathlib import Path
+
+truth_path = Path(sys.argv[1])
+no_truth_path = Path(sys.argv[2])
+
+fields = [
+    "event_id",
+    "track_id",
+    "parent_id",
+    "creator_process",
+    "vertex_time_ns",
+    "vertex_x_mm",
+    "vertex_y_mm",
+    "vertex_z_mm",
+    "kinetic_energy_MeV",
+    "dir_x",
+    "dir_y",
+    "dir_z",
+    "pol_x",
+    "pol_y",
+    "pol_z",
+    "polarization_valid",
+]
+
+def load(path):
+    with path.open(newline="") as handle:
+        return [
+            tuple(row[field] for field in fields)
+            for row in csv.DictReader(handle)
+        ]
+
+truth_rows = load(truth_path)
+no_truth_rows = load(no_truth_path)
+
+if truth_rows != no_truth_rows:
+    print(
+        "Truth-enabled and no-truth photon physics differ.",
+        file=sys.stderr,
+    )
+
+    for index, (truth_row, no_truth_row) in enumerate(
+        zip(truth_rows, no_truth_rows),
+        start=1,
+    ):
+        if truth_row != no_truth_row:
+            print(
+                f"First differing photon row: {index}",
+                file=sys.stderr,
+            )
+            print(
+                f"truth:    {truth_row}",
+                file=sys.stderr,
+            )
+            print(
+                f"no-truth: {no_truth_row}",
+                file=sys.stderr,
+            )
+            break
+
+    raise SystemExit(1)
+
+print(
+    "PASS: truth-enabled and no-truth photon physics are identical "
+    f"({len(truth_rows)} photon rows)"
+)
+PY
+
 run_case \
     "pps_2g_fixed_delay" \
     "pps-2g-fixed-delay" \
@@ -204,6 +343,8 @@ echo "Events per case: ${EVENT_COUNT}"
 echo "Results directory: ${RUN_ROOT}"
 echo
 echo "  PASS  direct-2g-zero-delay"
+echo "  PASS  direct-2g-zero-delay-no-truth"
+echo "  PASS  truth/no-truth photon equivalence"
 echo "  PASS  pps-2g-fixed-delay"
 echo "  PASS  ops-2g-fixed-delay"
 echo "  PASS  ops-3g-fixed-delay"

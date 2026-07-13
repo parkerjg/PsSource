@@ -135,99 +135,92 @@ PsSourceAnnihilationProcess::AtRestDoIt(
               )
             : nullptr;
 
-    if (!truth) {
-        G4Exception(
-            "PsSourceAnnihilationProcess::AtRestDoIt",
-            "PsSource_AnnihilationProcess_003",
-            FatalException,
-            "Transport-coupled annihilation could not access "
-            "PositroniumTruthInfo for the current event."
-        );
+    if (truth) {
+
+        truth->ps_class_id =
+            static_cast<int>(
+                model_result.ps_class
+            );
+
+        truth->annihilation_mode =
+            model_result.annihilation_mode;
+
+        // Total event time from the Geant4 event origin to annihilation.
+        // This includes positron transport followed by the sampled Ps delay.
+        truth->positron_terminal_time_ns =
+            track.GetGlobalTime() / ns;
+
+        truth->sampled_ps_delay_ns =
+            model_result.delay_ns;
+
+        truth->delay_ns =
+            truth->positron_terminal_time_ns +
+            truth->sampled_ps_delay_ns;
+
+        const G4ThreeVector& annihilation_position =
+            track.GetPosition();
+
+        truth->ann_x_mm =
+            annihilation_position.x() / mm;
+
+        truth->ann_y_mm =
+            annihilation_position.y() / mm;
+
+        truth->ann_z_mm =
+            annihilation_position.z() / mm;
+
+        const double displacement_x_mm =
+            truth->ann_x_mm -
+            truth->source_x_mm;
+
+        const double displacement_y_mm =
+            truth->ann_y_mm -
+            truth->source_y_mm;
+
+        const double displacement_z_mm =
+            truth->ann_z_mm -
+            truth->source_z_mm;
+
+        truth->positron_range_mm =
+            std::sqrt(
+                displacement_x_mm * displacement_x_mm +
+                displacement_y_mm * displacement_y_mm +
+                displacement_z_mm * displacement_z_mm
+            );
+
+        truth->medium_id =
+            m_config.environment.medium_id;
+
+        switch (model_result.ps_class) {
+            case PsClass::Direct2g:
+                truth->local_tau_ns =
+                    m_config.environment.tau_direct_ns;
+                break;
+
+            case PsClass::ParaPs2g:
+                truth->local_tau_ns =
+                    m_config.environment.tau_pps_ns;
+                break;
+
+            case PsClass::OrthoPs2g:
+            case PsClass::OrthoPs3g:
+                truth->local_tau_ns =
+                    m_config.environment.tau_ops_ns;
+                break;
+        }
+
+        truth->physics_model_name =
+            model_result.model_name;
+
+        truth->physics_model_version =
+            model_result.model_version;
+
+        truth->physics_validation_status =
+            model_result.validation_status;
+
+        truth->declared_annihilation_valid =
+            true;
     }
-
-    truth->ps_class_id =
-        static_cast<int>(
-            model_result.ps_class
-        );
-
-    truth->annihilation_mode =
-        model_result.annihilation_mode;
-
-    // Total event time from the Geant4 event origin to annihilation.
-    // This includes positron transport followed by the sampled Ps delay.
-    truth->positron_terminal_time_ns =
-        track.GetGlobalTime() / ns;
-
-    truth->sampled_ps_delay_ns =
-        model_result.delay_ns;
-
-    truth->delay_ns =
-        truth->positron_terminal_time_ns +
-        truth->sampled_ps_delay_ns;
-
-    const G4ThreeVector& annihilation_position =
-        track.GetPosition();
-
-    truth->ann_x_mm =
-        annihilation_position.x() / mm;
-
-    truth->ann_y_mm =
-        annihilation_position.y() / mm;
-
-    truth->ann_z_mm =
-        annihilation_position.z() / mm;
-
-    const double displacement_x_mm =
-        truth->ann_x_mm -
-        truth->source_x_mm;
-
-    const double displacement_y_mm =
-        truth->ann_y_mm -
-        truth->source_y_mm;
-
-    const double displacement_z_mm =
-        truth->ann_z_mm -
-        truth->source_z_mm;
-
-    truth->positron_range_mm =
-        std::sqrt(
-            displacement_x_mm * displacement_x_mm +
-            displacement_y_mm * displacement_y_mm +
-            displacement_z_mm * displacement_z_mm
-        );
-
-    truth->medium_id =
-        m_config.environment.medium_id;
-
-    switch (model_result.ps_class) {
-        case PsClass::Direct2g:
-            truth->local_tau_ns =
-                m_config.environment.tau_direct_ns;
-            break;
-
-        case PsClass::ParaPs2g:
-            truth->local_tau_ns =
-                m_config.environment.tau_pps_ns;
-            break;
-
-        case PsClass::OrthoPs2g:
-        case PsClass::OrthoPs3g:
-            truth->local_tau_ns =
-                m_config.environment.tau_ops_ns;
-            break;
-    }
-
-    truth->physics_model_name =
-        model_result.model_name;
-
-    truth->physics_model_version =
-        model_result.model_version;
-
-    truth->physics_validation_status =
-        model_result.validation_status;
-
-    truth->declared_annihilation_valid =
-        true;
 
     auto* gamma_definition =
         G4Gamma::GammaDefinition();

@@ -30,6 +30,10 @@
 #include "G4VUserDetectorConstruction.hh"
 #include "G4ios.hh"
 #include "G4Positron.hh"
+#include "G4PrimaryParticle.hh"
+#include "G4PrimaryVertex.hh"
+#include "G4VUserPrimaryGeneratorAction.hh"
+#include "Randomize.hh"
 
 #include <array>
 #include <cmath>
@@ -63,6 +67,7 @@ struct AppOptions {
 
     std::string preset_name;
 
+    bool transport_no_truth = false;
     GenerationModeChoice generation_mode = GenerationModeChoice::Native;
 
     bool enable_qe = true;
@@ -705,6 +710,9 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
             if (i + 1 >= argc) throw std::runtime_error("Missing value for --post-cmd");
             opt.post_commands.emplace_back(argv[++i]);
         }
+        else if (arg == "--transport-no-truth") {
+            opt.transport_no_truth = true;
+        }
         else if (arg == "--no-run") {
             opt.no_run = true;
         }
@@ -721,6 +729,17 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
         throw std::runtime_error(
             "--positron-range cannot be enabled in transport-coupled mode. "
             "Geant4 positron transport determines the terminal position."
+        );
+    }
+
+    if (
+        opt.transport_no_truth &&
+        opt.generation_mode !=
+            GenerationModeChoice::TransportCoupled
+    ) {
+        throw std::runtime_error(
+            "--transport-no-truth requires "
+            "--generation-mode transport-coupled"
         );
     }
 
@@ -1484,6 +1503,79 @@ private:
     G4LogicalVolume* m_logic_det_minus = nullptr;
 };
 
+class NoTruthPositronGenerator
+    : public G4VUserPrimaryGeneratorAction {
+public:
+    explicit NoTruthPositronGenerator(
+        const AppOptions& opt
+    )
+        : m_opt(opt)
+    {
+    }
+
+    void GeneratePrimaries(
+        G4Event* event
+    ) override
+    {
+        const double cos_theta =
+            -1.0 + 2.0 * G4UniformRand();
+
+        const double sin_theta =
+            std::sqrt(
+                std::max(
+                    0.0,
+                    1.0 - cos_theta * cos_theta
+                )
+            );
+
+        constexpr double kPi =
+            3.14159265358979323846;
+
+        const double phi =
+            2.0 * kPi * G4UniformRand();
+
+        const G4ThreeVector direction(
+            sin_theta * std::cos(phi),
+            sin_theta * std::sin(phi),
+            cos_theta
+        );
+
+        const G4ThreeVector source_position(
+            m_opt.source_mm[0] * mm,
+            m_opt.source_mm[1] * mm,
+            m_opt.source_mm[2] * mm
+        );
+
+        const G4double source_time =
+            m_opt.use_external_base_time
+                ? m_opt.base_time_ns * ns
+                : 0.0;
+
+        auto* vertex =
+            new G4PrimaryVertex(
+                source_position,
+                source_time
+            );
+
+        auto* positron =
+            new G4PrimaryParticle(
+                G4Positron::PositronDefinition()
+            );
+
+        positron->SetMomentumDirection(direction);
+
+        positron->SetKineticEnergy(
+            m_opt.positron_kinetic_kev * keV
+        );
+
+        vertex->SetPrimary(positron);
+        event->AddPrimaryVertex(vertex);
+    }
+
+private:
+    AppOptions m_opt;
+};
+
 // -----------------------------------------------------------------------------
 // Action initialization
 // -----------------------------------------------------------------------------
@@ -1496,89 +1588,105 @@ public:
 
     void Build() const override
     {
-        auto* gen = new PositroniumGenerator();
 
-	switch (m_opt.generation_mode) {
-	    case GenerationModeChoice::Native:
-		gen->SetGenerationMode(
-		    PositroniumGenerator::GenerationMode::NativeGeant4
-		);
-		break;
+        G4VUserPrimaryGeneratorAction* primary_generator = nullptr;
 
-	    case GenerationModeChoice::Explicit:
-		gen->SetGenerationMode(
-		    PositroniumGenerator::GenerationMode::ExplicitProvider
-		);
-		break;
-
-	    case GenerationModeChoice::TransportCoupled:
-		gen->SetGenerationMode(
-		    PositroniumGenerator::GenerationMode::TransportCoupled
-		);
-		break;
-	}
-
-        gen->SetSourcePosition(m_opt.source_mm);
-        gen->SetPositronKineticEnergyKeV(m_opt.positron_kinetic_kev);
-
-        gen->SetHasPromptGamma(m_opt.has_prompt_gamma);
-        if (m_opt.has_prompt_gamma) {
-            gen->SetPromptEnergyMeV(m_opt.prompt_energy_mev);
+        if (m_opt.transport_no_truth) {
+            primary_generator =
+                new NoTruthPositronGenerator(m_opt);
+        } else {
+            primary_generator =
+                new PositroniumGenerator();
         }
 
-        gen->SetEnableQuantumEntanglement(m_opt.enable_qe);
+        auto* gen =
+            dynamic_cast<PositroniumGenerator*>(
+                primary_generator
+            );
 
-        gen->SetUseExternalBaseTime(m_opt.use_external_base_time);
-        if (m_opt.use_external_base_time) {
-            gen->SetBaseTimeNs(m_opt.base_time_ns);
+    if (gen) {
+        switch (m_opt.generation_mode) {
+            case GenerationModeChoice::Native:
+            gen->SetGenerationMode(
+                PositroniumGenerator::GenerationMode::NativeGeant4
+            );
+            break;
+
+            case GenerationModeChoice::Explicit:
+            gen->SetGenerationMode(
+                PositroniumGenerator::GenerationMode::ExplicitProvider
+            );
+            break;
+
+            case GenerationModeChoice::TransportCoupled:
+            gen->SetGenerationMode(
+                PositroniumGenerator::GenerationMode::TransportCoupled
+            );
+            break;
         }
 
-        if (m_opt.generation_mode == GenerationModeChoice::Explicit) {
-            gen->SetFractions(m_opt.f_direct, m_opt.f_pps, m_opt.f_ops);
-            gen->SetEnableThreeGamma(m_opt.ortho_3g_fraction > 0.0);
-            gen->SetOrthoThreeGammaFraction(m_opt.ortho_3g_fraction);
+            gen->SetSourcePosition(m_opt.source_mm);
+            gen->SetPositronKineticEnergyKeV(m_opt.positron_kinetic_kev);
 
-            switch (m_opt.three_gamma_model) {
-                case ThreeGammaModelChoice::Approximate:
-                gen->SetThreeGammaModel(
-                    PositroniumProvider::ThreeGammaModel::
-                    ApproximatePhaseSpace
-                );
-                break;
-
-                case ThreeGammaModelChoice::OrePowell:
-                gen->SetThreeGammaModel(
-                    PositroniumProvider::ThreeGammaModel::
-                    Geant4OrePowell
-                );
-                break;
-
-                case ThreeGammaModelChoice::OrePowellPolarized:
-                gen->SetThreeGammaModel(
-                    PositroniumProvider::ThreeGammaModel::
-                    Geant4PolarizedOrePowell
-                );
-                break;
+            gen->SetHasPromptGamma(m_opt.has_prompt_gamma);
+            if (m_opt.has_prompt_gamma) {
+                gen->SetPromptEnergyMeV(m_opt.prompt_energy_mev);
             }
 
-            if (m_opt.delay_mode == DelayModeChoice::Exponential) {
-                gen->SetDelayMode(PositroniumProvider::DelayMode::Exponential);
-            } else {
-                gen->SetDelayMode(PositroniumProvider::DelayMode::Fixed);
+            gen->SetEnableQuantumEntanglement(m_opt.enable_qe);
+
+            gen->SetUseExternalBaseTime(m_opt.use_external_base_time);
+            if (m_opt.use_external_base_time) {
+                gen->SetBaseTimeNs(m_opt.base_time_ns);
             }
 
-            gen->SetTauParaPsNs(m_opt.tau_pps_ns);
-            gen->SetTauOpsNs(m_opt.tau_ops_ns);
-            gen->SetFixedDelayNs(m_opt.fixed_delay_ns);
+            if (m_opt.generation_mode == GenerationModeChoice::Explicit) {
+                gen->SetFractions(m_opt.f_direct, m_opt.f_pps, m_opt.f_ops);
+                gen->SetEnableThreeGamma(m_opt.ortho_3g_fraction > 0.0);
+                gen->SetOrthoThreeGammaFraction(m_opt.ortho_3g_fraction);
 
-            gen->SetEnablePositronRange(m_opt.enable_positron_range);
-            gen->SetPositronRangeSigmaMm(m_opt.positron_range_sigma_mm);
+                switch (m_opt.three_gamma_model) {
+                    case ThreeGammaModelChoice::Approximate:
+                    gen->SetThreeGammaModel(
+                        PositroniumProvider::ThreeGammaModel::
+                        ApproximatePhaseSpace
+                    );
+                    break;
+
+                    case ThreeGammaModelChoice::OrePowell:
+                    gen->SetThreeGammaModel(
+                        PositroniumProvider::ThreeGammaModel::
+                        Geant4OrePowell
+                    );
+                    break;
+
+                    case ThreeGammaModelChoice::OrePowellPolarized:
+                    gen->SetThreeGammaModel(
+                        PositroniumProvider::ThreeGammaModel::
+                        Geant4PolarizedOrePowell
+                    );
+                    break;
+                }
+
+                if (m_opt.delay_mode == DelayModeChoice::Exponential) {
+                    gen->SetDelayMode(PositroniumProvider::DelayMode::Exponential);
+                } else {
+                    gen->SetDelayMode(PositroniumProvider::DelayMode::Fixed);
+                }
+
+                gen->SetTauParaPsNs(m_opt.tau_pps_ns);
+                gen->SetTauOpsNs(m_opt.tau_ops_ns);
+                gen->SetFixedDelayNs(m_opt.fixed_delay_ns);
+
+                gen->SetEnablePositronRange(m_opt.enable_positron_range);
+                gen->SetPositronRangeSigmaMm(m_opt.positron_range_sigma_mm);
+            }
         }
 
         auto* event_action = new AnnihilationTruthEventAction();
         auto* tracking_action = new AnnihilationTruthTrackingAction(event_action);
 
-        SetUserAction(gen);
+        SetUserAction(primary_generator);
         SetUserAction(event_action);
         SetUserAction(tracking_action);
     }

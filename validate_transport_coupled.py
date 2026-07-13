@@ -103,6 +103,7 @@ def parse_args() -> argparse.Namespace:
         "--case",
         choices=[
             "direct-2g-zero-delay",
+            "direct-2g-zero-delay-no-truth",
             "pps-2g-fixed-delay",
             "ops-2g-fixed-delay",
             "ops-3g-fixed-delay",
@@ -314,6 +315,7 @@ def validate_deterministic_2g(
     case_name: str,
     expected_ps_delay_ns: float,
     expected_ps_class_id: int,
+    truth_expected: bool = True,
 ) -> dict[str, Any]:
     failures: list[str] = []
 
@@ -367,13 +369,6 @@ def validate_deterministic_2g(
                 f"Event {event_id}: annihilation_found != 1"
             )
 
-        if summary["ps_class_id"] != expected_ps_class_id:
-            failures.append(
-                f"Event {event_id}: ps_class_id "
-                f"{summary['ps_class_id']} does not match "
-                f"expected {expected_ps_class_id}"
-            )
-
         if summary["annihilation_mode"] != 2:
             failures.append(
                 f"Event {event_id}: annihilation_mode != 2"
@@ -389,65 +384,109 @@ def validate_deterministic_2g(
                 f"Event {event_id}: unexpected prompt gamma"
             )
 
-        ps_delay_error = abs(
-            summary["sampled_ps_delay_ns"]
-            - expected_ps_delay_ns
-        )
-
-        if ps_delay_error > summary_tolerance:
-            failures.append(
-                f"Event {event_id}: sampled Ps delay "
-                f"{summary['sampled_ps_delay_ns']} ns does not match "
-                f"expected {expected_ps_delay_ns} ns"
-            )
-
-        expected_summary_time = (
-            summary["positron_terminal_time_ns"]
-            + summary["sampled_ps_delay_ns"]
-        )
-
-        summary_time_difference = abs(
-            summary["annihilation_time_ns"]
-            - expected_summary_time
-        )
-
-        maximum_summary_time_difference = max(
-            maximum_summary_time_difference,
-            summary_time_difference,
-        )
-
-        if summary_time_difference > summary_tolerance:
-            failures.append(
-                f"Event {event_id}: summary timing decomposition failed"
-            )
-
-        if summary["positron_terminal_time_ns"] <= 0.0:
-            failures.append(
-                f"Event {event_id}: terminal time is not positive"
-            )
-
         if summary["positron_range_mm"] <= 0.0:
             failures.append(
                 f"Event {event_id}: positron displacement is not positive"
             )
 
-        expected_provenance = (
-            "ConfigurablePsModel/ApproximatePhaseSpace",
-            "1.0",
-            "approximate-controlled-source-model",
-        )
+        if truth_expected:
+            if summary["ps_class_id"] != expected_ps_class_id:
+                failures.append(
+                    f"Event {event_id}: ps_class_id "
+                    f"{summary['ps_class_id']} does not match "
+                    f"expected {expected_ps_class_id}"
+                )
 
-        actual_provenance = (
-            summary["physics_model_name"],
-            summary["physics_model_version"],
-            summary["physics_validation_status"],
-        )
-
-        if actual_provenance != expected_provenance:
-            failures.append(
-                f"Event {event_id}: unexpected provenance "
-                f"{actual_provenance}"
+            ps_delay_error = abs(
+                summary["sampled_ps_delay_ns"]
+                - expected_ps_delay_ns
             )
+
+            if ps_delay_error > summary_tolerance:
+                failures.append(
+                    f"Event {event_id}: sampled Ps delay "
+                    f"{summary['sampled_ps_delay_ns']} ns does not match "
+                    f"expected {expected_ps_delay_ns} ns"
+                )
+
+            expected_summary_time = (
+                summary["positron_terminal_time_ns"]
+                + summary["sampled_ps_delay_ns"]
+            )
+
+            summary_time_difference = abs(
+                summary["annihilation_time_ns"]
+                - expected_summary_time
+            )
+
+            maximum_summary_time_difference = max(
+                maximum_summary_time_difference,
+                summary_time_difference,
+            )
+
+            if summary_time_difference > summary_tolerance:
+                failures.append(
+                    f"Event {event_id}: summary timing decomposition failed"
+                )
+
+            if summary["positron_terminal_time_ns"] <= 0.0:
+                failures.append(
+                    f"Event {event_id}: terminal time is not positive"
+                )
+
+            expected_provenance = (
+                "ConfigurablePsModel/ApproximatePhaseSpace",
+                "1.0",
+                "approximate-controlled-source-model",
+            )
+
+            actual_provenance = (
+                summary["physics_model_name"],
+                summary["physics_model_version"],
+                summary["physics_validation_status"],
+            )
+
+            if actual_provenance != expected_provenance:
+                failures.append(
+                    f"Event {event_id}: unexpected provenance "
+                    f"{actual_provenance}"
+                )
+        else:
+            if summary["ps_class_id"] != -1:
+                failures.append(
+                    f"Event {event_id}: no-truth ps_class_id "
+                    f"is not -1"
+                )
+
+            if summary["positron_terminal_time_ns"] != -1.0:
+                failures.append(
+                    f"Event {event_id}: no-truth terminal time "
+                    f"is not unavailable"
+                )
+
+            if summary["sampled_ps_delay_ns"] != -1.0:
+                failures.append(
+                    f"Event {event_id}: no-truth sampled delay "
+                    f"is not unavailable"
+                )
+
+            expected_provenance = (
+                "unknown",
+                "unknown",
+                "unknown",
+            )
+
+            actual_provenance = (
+                summary["physics_model_name"],
+                summary["physics_model_version"],
+                summary["physics_validation_status"],
+            )
+
+            if actual_provenance != expected_provenance:
+                failures.append(
+                    f"Event {event_id}: no-truth provenance "
+                    f"is not unavailable: {actual_provenance}"
+                )
 
         if len(gammas) != 2:
             failures.append(
@@ -616,6 +655,7 @@ def validate_deterministic_2g(
     return {
         "status": "PASS" if not failures else "FAIL",
         "case": case_name,
+        "truth_expected": truth_expected,
         "expected_events": expected_events,
         "expected_ps_class_id": expected_ps_class_id,
         "summary_events": len(summary_rows),
@@ -1215,14 +1255,22 @@ def main() -> int:
         "direct-2g-zero-delay": {
             "delay_ns": 0.0,
             "ps_class_id": 0,
+            "truth_expected": True,
+        },
+        "direct-2g-zero-delay-no-truth": {
+            "delay_ns": 0.0,
+            "ps_class_id": -1,
+            "truth_expected": False,
         },
         "pps-2g-fixed-delay": {
             "delay_ns": 3.0,
             "ps_class_id": 1,
+            "truth_expected": True,
         },
         "ops-2g-fixed-delay": {
             "delay_ns": 3.0,
             "ps_class_id": 2,
+            "truth_expected": True,
         },
     }
 
@@ -1258,6 +1306,7 @@ def main() -> int:
             args.case,
             case_config["delay_ns"],
             case_config["ps_class_id"],
+            case_config["truth_expected"],
         )
 
     elif args.case in deterministic_3g_cases:
