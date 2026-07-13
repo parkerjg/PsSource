@@ -46,6 +46,7 @@ SUMMARY_REQUIRED_COLUMNS = {
     "source_event_id",
     "has_prompt_gamma",
     "annihilation_found",
+    "ps_class_id",
     "annihilation_mode",
     "n_annihilation_gammas",
     "annihilation_time_ns",
@@ -103,6 +104,7 @@ def parse_args() -> argparse.Namespace:
         choices=[
             "direct-2g-zero-delay",
             "pps-2g-fixed-delay",
+            "ops-2g-fixed-delay",
         ],
         required=True,
         help="Transport regression case to validate.",
@@ -166,6 +168,7 @@ def read_summary(path: Path) -> dict[int, dict[str, Any]]:
                 "source_event_id": int(row["source_event_id"]),
                 "has_prompt_gamma": int(row["has_prompt_gamma"]),
                 "annihilation_found": int(row["annihilation_found"]),
+                "ps_class_id": int(row["ps_class_id"]),
                 "annihilation_mode": int(row["annihilation_mode"]),
                 "n_annihilation_gammas": int(
                     row["n_annihilation_gammas"]
@@ -286,6 +289,7 @@ def validate_deterministic_2g(
     expected_events: int,
     case_name: str,
     expected_ps_delay_ns: float,
+    expected_ps_class_id: int,
 ) -> dict[str, Any]:
     failures: list[str] = []
 
@@ -337,6 +341,13 @@ def validate_deterministic_2g(
         if summary["annihilation_found"] != 1:
             failures.append(
                 f"Event {event_id}: annihilation_found != 1"
+            )
+
+        if summary["ps_class_id"] != expected_ps_class_id:
+            failures.append(
+                f"Event {event_id}: ps_class_id "
+                f"{summary['ps_class_id']} does not match "
+                f"expected {expected_ps_class_id}"
             )
 
         if summary["annihilation_mode"] != 2:
@@ -582,6 +593,7 @@ def validate_deterministic_2g(
         "status": "PASS" if not failures else "FAIL",
         "case": case_name,
         "expected_events": expected_events,
+        "expected_ps_class_id": expected_ps_class_id,
         "summary_events": len(summary_rows),
         "gamma_rows": total_gamma_rows,
         "maximum_energy_error_MeV": maximum_energy_error,
@@ -614,17 +626,30 @@ def main() -> int:
     gamma_groups = read_gammas(args.gammas)
 
     deterministic_2g_cases = {
-        "direct-2g-zero-delay": 0.0,
-        "pps-2g-fixed-delay": 3.0,
+        "direct-2g-zero-delay": {
+            "delay_ns": 0.0,
+            "ps_class_id": 0,
+        },
+        "pps-2g-fixed-delay": {
+            "delay_ns": 3.0,
+            "ps_class_id": 1,
+        },
+        "ops-2g-fixed-delay": {
+            "delay_ns": 3.0,
+            "ps_class_id": 2,
+        },
     }
 
     if args.case in deterministic_2g_cases:
+        case_config = deterministic_2g_cases[args.case]
+
         result = validate_deterministic_2g(
             summary_rows,
             gamma_groups,
             args.expected_events,
             args.case,
-            deterministic_2g_cases[args.case],
+            case_config["delay_ns"],
+            case_config["ps_class_id"],
         )
     else:
         raise ValueError(f"Unsupported validation case: {args.case}")

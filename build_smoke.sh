@@ -14,9 +14,35 @@ assert_file_nonempty() {
     [[ -s "$f" ]] || fail "Expected non-empty file: $f"
 }
 
-summarize_modes() {
+summarize_modes()
+{
     local f="$1"
-    awk -F, 'NR>1 {count[$9]++} END {for (k in count) print count[k], k}' "$f" | sort -k2,2n
+
+    awk -F, '
+        NR == 1 {
+            for (i = 1; i <= NF; ++i) {
+                if ($i == "annihilation_mode") {
+                    column = i
+                }
+            }
+
+            if (!column) {
+                exit 2
+            }
+
+            next
+        }
+
+        {
+            count[$column]++
+        }
+
+        END {
+            for (mode in count) {
+                print count[mode], mode
+            }
+        }
+    ' "$f" | sort -k2,2n
 }
 
 summarize_hit_creators() {
@@ -120,7 +146,29 @@ native_annihil_hits=$(( native_annihil_hits_plus + native_annihil_hits_minus ))
 (( native_annihil_hits > 0 )) || fail "Native smoke test did not record any creator_process=annihil hits."
 
 native_mode_rows=$(
-    awk -F, 'NR>1 && ($9 == 2 || $9 == 3) {c++} END {print c+0}' annihilation_summary.csv
+    awk -F, '
+        NR == 1 {
+            for (i = 1; i <= NF; ++i) {
+                if ($i == "annihilation_mode") {
+                    column = i
+                }
+            }
+
+            if (!column) {
+                exit 2
+            }
+
+            next
+        }
+
+        $column == 2 || $column == 3 {
+            count++
+        }
+
+        END {
+            print count + 0
+        }
+    ' annihilation_summary.csv
 )
 (( native_mode_rows > 0 )) || fail "Native smoke test did not record any 2g/3g annihilation modes."
 
@@ -161,7 +209,29 @@ assert_file_nonempty annihilation_summary.csv
 assert_file_nonempty annihilation_gammas.csv
 
 explicit_non3=$(
-    awk -F, 'NR>1 && $9 != 3 {c++} END {print c+0}' annihilation_summary.csv
+    awk -F, '
+        NR == 1 {
+            for (i = 1; i <= NF; ++i) {
+                if ($i == "annihilation_mode") {
+                    column = i
+                }
+            }
+
+            if (!column) {
+                exit 2
+            }
+
+            next
+        }
+
+        $column != 3 {
+            count++
+        }
+
+        END {
+            print count + 0
+        }
+    ' annihilation_summary.csv
 )
 (( explicit_non3 == 0 )) || fail "Explicit smoke test produced non-3g annihilation modes."
 
@@ -176,7 +246,28 @@ explicit_annihil_hits=$(( explicit_annihil_hits_plus + explicit_annihil_hits_min
 (( explicit_annihil_hits == 0 )) || fail "Explicit smoke test produced native annihil detector hits."
 
 explicit_unique_times=$(
-    awk -F, 'NR>1 {print $11}' annihilation_summary.csv | sort -u | wc -l | tr -d ' '
+    awk -F, '
+        NR == 1 {
+            for (i = 1; i <= NF; ++i) {
+                if ($i == "annihilation_time_ns") {
+                    column = i
+                }
+            }
+
+            if (!column) {
+                exit 2
+            }
+
+            next
+        }
+
+        {
+            print $column
+        }
+    ' annihilation_summary.csv |
+        sort -u |
+        wc -l |
+        tr -d " "
 )
 (( explicit_unique_times > 10 )) || fail "Explicit smoke test did not show a distributed annihilation_time_ns."
 

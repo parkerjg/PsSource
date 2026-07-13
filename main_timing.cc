@@ -929,9 +929,10 @@ public:
         }
 
 	m_summary_out
-	    << "event_id,source_event_id,qe_requested,has_prompt_gamma,"
-	    << "source_x_mm,source_y_mm,source_z_mm,"
-	    << "annihilation_found,annihilation_mode,n_annihilation_gammas,"
+            << "event_id,source_event_id,qe_requested,has_prompt_gamma,"
+            << "source_x_mm,source_y_mm,source_z_mm,"
+            << "annihilation_found,ps_class_id,annihilation_mode,"
+            << "n_annihilation_gammas,"
 	    << "annihilation_time_ns,annihilation_x_mm,annihilation_y_mm,"
 	    << "annihilation_z_mm,positron_range_mm,"
             << "physics_model_name,physics_model_version,"
@@ -975,6 +976,7 @@ public:
 	m_physics_model_version = "unknown";
 	m_physics_validation_status = "unknown";
 
+        m_ps_class_id = -1;
         m_declared_annihilation_mode = -1;
         m_declared_delay_ns = -1.0;
 	m_positron_terminal_time_ns = -1.0;
@@ -1004,8 +1006,10 @@ public:
 		m_physics_validation_status =
 		    truth->physics_validation_status;
 
+                m_ps_class_id = truth->ps_class_id;
                 m_declared_annihilation_mode = truth->annihilation_mode;
                 m_declared_delay_ns = truth->delay_ns;
+
                 m_declared_ann_x_mm = truth->ann_x_mm;
                 m_declared_ann_y_mm = truth->ann_y_mm;
                 m_declared_ann_z_mm = truth->ann_z_mm;
@@ -1048,6 +1052,9 @@ public:
 
                 m_physics_validation_status =
                     truth->physics_validation_status;
+
+                m_ps_class_id =
+                    truth->ps_class_id;
 
                 m_declared_annihilation_mode =
                     truth->annihilation_mode;
@@ -1111,6 +1118,7 @@ public:
             << m_source_y_mm << ","
             << m_source_z_mm << ","
             << (m_annihilation_found ? 1 : 0) << ","
+            << m_ps_class_id << ","
             << reported_mode << ","
             << reported_ngam << ","
             << m_annihilation_time_ns << ","
@@ -1249,6 +1257,7 @@ private:
     double m_source_y_mm = 0.0;
     double m_source_z_mm = 0.0;
 
+    int m_ps_class_id = -1;
     int m_declared_annihilation_mode = -1;
     double m_declared_delay_ns = -1.0;
     double m_positron_terminal_time_ns = -1.0;
