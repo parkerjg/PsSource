@@ -155,8 +155,15 @@ PsSourceAnnihilationProcess::AtRestDoIt(
 
     // Total event time from the Geant4 event origin to annihilation.
     // This includes positron transport followed by the sampled Ps delay.
+    truth->positron_terminal_time_ns =
+        track.GetGlobalTime() / ns;
+
+    truth->sampled_ps_delay_ns =
+        model_result.delay_ns;
+
     truth->delay_ns =
-        photon_birth_time / ns;
+        truth->positron_terminal_time_ns +
+        truth->sampled_ps_delay_ns;
 
     const G4ThreeVector& annihilation_position =
         track.GetPosition();

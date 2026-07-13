@@ -85,8 +85,15 @@ public:
     // later from tracking/event actions.
     bool declared_annihilation_valid = false;
 
-    // Delay from source creation to annihilation vertex.
+    // Total delay from source creation to annihilation vertex.
+    // In transport-coupled mode, this includes positron transport time
+    // followed by the sampled positronium delay.
     double delay_ns = -1.0;
+
+    // Components of the total delay. These are most useful in
+    // transport-coupled mode.
+    double positron_terminal_time_ns = -1.0;
+    double sampled_ps_delay_ns = -1.0;
 
     bool has_prompt_gamma = false;
     double prompt_energy_MeV = 0.0;

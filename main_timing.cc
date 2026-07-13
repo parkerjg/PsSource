@@ -934,8 +934,9 @@ public:
 	    << "annihilation_found,annihilation_mode,n_annihilation_gammas,"
 	    << "annihilation_time_ns,annihilation_x_mm,annihilation_y_mm,"
 	    << "annihilation_z_mm,positron_range_mm,"
-	    << "physics_model_name,physics_model_version,"
-	    << "physics_validation_status\n";
+            << "physics_model_name,physics_model_version,"
+            << "physics_validation_status,"
+            << "positron_terminal_time_ns,sampled_ps_delay_ns\n";
 
         m_gamma_out.open("annihilation_gammas.csv", std::ios::out | std::ios::trunc);
         if (!m_gamma_out) {
@@ -976,6 +977,8 @@ public:
 
         m_declared_annihilation_mode = -1;
         m_declared_delay_ns = -1.0;
+	m_positron_terminal_time_ns = -1.0;
+	m_sampled_ps_delay_ns = -1.0;
         m_declared_ann_x_mm = std::numeric_limits<double>::quiet_NaN();
         m_declared_ann_y_mm = std::numeric_limits<double>::quiet_NaN();
         m_declared_ann_z_mm = std::numeric_limits<double>::quiet_NaN();
@@ -1052,6 +1055,12 @@ public:
                 m_declared_delay_ns =
                     truth->delay_ns;
 
+		m_positron_terminal_time_ns =
+		    truth->positron_terminal_time_ns;
+
+		m_sampled_ps_delay_ns =
+		    truth->sampled_ps_delay_ns;
+
                 m_declared_ann_x_mm =
                     truth->ann_x_mm;
 
@@ -1111,8 +1120,10 @@ public:
             << positron_range_mm << ","
             << m_physics_model_name << ","
             << m_physics_model_version << ","
-            << m_physics_validation_status
-            << "\n";
+	    << m_physics_validation_status << ","
+	    << m_positron_terminal_time_ns << ","
+	    << m_sampled_ps_delay_ns
+	    << "\n";
 
         for (const auto& gamma_rec : m_annihilation_gammas) {
             m_gamma_out
@@ -1240,6 +1251,8 @@ private:
 
     int m_declared_annihilation_mode = -1;
     double m_declared_delay_ns = -1.0;
+    double m_positron_terminal_time_ns = -1.0;
+    double m_sampled_ps_delay_ns = -1.0;
     double m_declared_ann_x_mm = std::numeric_limits<double>::quiet_NaN();
     double m_declared_ann_y_mm = std::numeric_limits<double>::quiet_NaN();
     double m_declared_ann_z_mm = std::numeric_limits<double>::quiet_NaN();
