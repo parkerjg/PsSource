@@ -1,4 +1,5 @@
 #include "PsSourceAnnihilationProcess.hh"
+#include "PsTerminalStateBuilder.hh"
 
 #include "G4DynamicParticle.hh"
 #include "G4Exception.hh"
@@ -40,15 +41,29 @@ PsSourceAnnihilationProcess(
 G4VParticleChange*
 PsSourceAnnihilationProcess::AtRestDoIt(
     const G4Track& track,
-    const G4Step&
+    const G4Step& step
 )
 {
+    PsEnvironment environment;
     PsModelResult model_result;
 
     try {
+        const PsTerminalState terminal_state =
+            PsTerminalStateBuilder::Build(
+                track,
+                step,
+                0
+            );
+
+        environment =
+            m_config.environment_provider
+                ? m_config.environment_provider->
+                    ResolveEnvironment(terminal_state)
+                : m_config.environment;
+
         model_result =
             m_model.Sample(
-                m_config.environment
+                environment
             );
     }
     catch (const std::exception& error) {
@@ -122,18 +137,18 @@ PsSourceAnnihilationProcess::AtRestDoIt(
         switch (model_result.ps_class) {
             case PsClass::Direct2g:
                 local_tau_ns =
-                    m_config.environment.tau_direct_ns;
+                    environment.tau_direct_ns;
                 break;
 
             case PsClass::ParaPs2g:
                 local_tau_ns =
-                    m_config.environment.tau_pps_ns;
+                    environment.tau_pps_ns;
                 break;
 
             case PsClass::OrthoPs2g:
             case PsClass::OrthoPs3g:
                 local_tau_ns =
-                    m_config.environment.tau_ops_ns;
+                    environment.tau_ops_ns;
                 break;
         }
 
@@ -164,7 +179,7 @@ PsSourceAnnihilationProcess::AtRestDoIt(
         };
 
         record.medium_id =
-            m_config.environment.medium_id;
+            environment.medium_id;
 
         record.local_tau_ns =
             local_tau_ns;

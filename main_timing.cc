@@ -2,6 +2,7 @@
 #include "PositroniumTruthInfo.hh"
 #include "PsTerminalStateBuilder.hh"
 #include "PsSourceAnnihilationPhysics.hh"
+#include "FixedPsSourceEnvironmentProvider.hh"
 #include "PsSourceAnnihilationObserver.hh"
 
 #include "G4EventManager.hh"
@@ -43,6 +44,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -70,6 +72,8 @@ struct AppOptions {
     std::string preset_name;
 
     bool transport_no_truth = false;
+    bool transport_use_fixed_environment_provider = false;
+
     GenerationModeChoice generation_mode = GenerationModeChoice::Native;
 
     bool enable_qe = true;
@@ -429,6 +433,8 @@ static void PrintUsage(const char* prog)
         << "  --macro FILE                 Execute Geant4 macro after initialization\n"
         << "  --pre-cmd \"CMD\"             Apply Geant4 UI command before initialize (repeatable)\n"
         << "  --post-cmd \"CMD\"            Apply Geant4 UI command after initialize (repeatable)\n"
+        << "  --transport-use-fixed-environment-provider\n"
+        << "                               Test transport mode through the fixed provider interface\n"
         << "  --no-run                     Initialize only; do not beamOn automatically\n"
         << "  --help                       Show this message\n\n"
         << "Presets:\n"
@@ -712,6 +718,13 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
             if (i + 1 >= argc) throw std::runtime_error("Missing value for --post-cmd");
             opt.post_commands.emplace_back(argv[++i]);
         }
+        else if (
+            arg ==
+            "--transport-use-fixed-environment-provider"
+        ) {
+            opt.transport_use_fixed_environment_provider =
+                true;
+        }
         else if (arg == "--transport-no-truth") {
             opt.transport_no_truth = true;
         }
@@ -741,6 +754,17 @@ static AppOptions ParseCommandLine(int argc, char** argv, AppOptions opt = AppOp
     ) {
         throw std::runtime_error(
             "--transport-no-truth requires "
+            "--generation-mode transport-coupled"
+        );
+    }
+
+    if (
+        opt.transport_use_fixed_environment_provider &&
+        opt.generation_mode !=
+            GenerationModeChoice::TransportCoupled
+    ) {
+        throw std::runtime_error(
+            "--transport-use-fixed-environment-provider requires "
             "--generation-mode transport-coupled"
         );
     }
@@ -1853,6 +1877,9 @@ int main(int argc, char** argv)
 
     PositroniumTruthObserver truth_observer;
 
+    std::unique_ptr<FixedPsSourceEnvironmentProvider>
+        fixed_environment_provider;
+
     auto* run_manager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
 
     run_manager->SetUserInitialization(new TimingDetectorConstruction(opt.world_material));
@@ -1932,6 +1959,20 @@ int main(int argc, char** argv)
                     ConfigurablePsModel::ThreeGammaModel::
                         Geant4PolarizedOrePowell;
                 break;
+        }
+
+        if (
+            opt.transport_use_fixed_environment_provider
+        ) {
+            fixed_environment_provider =
+                std::make_unique<
+                    FixedPsSourceEnvironmentProvider
+                >(
+                    annihilation_config.environment
+                );
+
+            annihilation_config.environment_provider =
+                fixed_environment_provider.get();
         }
 
         annihilation_config.observer =

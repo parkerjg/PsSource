@@ -99,7 +99,7 @@ echo "Build mode     : standalone Geant4"
 echo "-------------------------------------------------------"
 
 echo
-echo "[1/9] Building ps_main ..."
+echo "[1/11] Building ps_main ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -108,7 +108,7 @@ echo "[1/9] Building ps_main ..."
     $G4_LIBS_STR
 
 echo
-echo "[2/9] Building ps_timing ..."
+echo "[2/11] Building ps_timing ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main_timing.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -117,7 +117,7 @@ echo "[2/9] Building ps_timing ..."
     $G4_LIBS_STR
 
 echo
-echo "[3/9] Building standalone transport example ..."
+echo "[3/11] Building standalone transport example ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     standalone_transport_example.cc \
@@ -132,7 +132,7 @@ echo "[3/9] Building standalone transport example ..."
     $G4_LIBS_STR
 
 echo
-echo "[4/9] Building CMake library and standalone example ..."
+echo "[4/11] Building CMake library and standalone example ..."
 
 cmake -S . -B build-cmake \
     -DCMAKE_BUILD_TYPE=Release \
@@ -141,13 +141,13 @@ cmake -S . -B build-cmake \
 cmake --build build-cmake -j
 
 echo
-echo "[5/9] Smoke-checking ps_main front end ..."
+echo "[5/11] Smoke-checking ps_main front end ..."
 ./ps_main --generation-mode native   --beam-on 5 --prompt on  >/dev/null 2>&1
 ./ps_main --generation-mode explicit --beam-on 5 --prompt off >/dev/null 2>&1
 echo "ps_main ran successfully in both native and explicit modes."
 
 echo
-echo "[6/9] Running native Geant4 timing smoke test ..."
+echo "[6/11] Running native Geant4 timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv native_smoke.log explicit_smoke.log
 
 ./ps_timing \
@@ -212,7 +212,7 @@ echo "Native hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[7/9] Running explicit provider timing smoke test ..."
+echo "[7/11] Running explicit provider timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv
 
 ./ps_timing \
@@ -314,7 +314,7 @@ echo "Explicit hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[8/9] Running standalone transport integration test ..."
+echo "[8/11] Running standalone transport integration test ..."
 
 ./build-cmake/standalone_transport_example \
     > build-cmake/standalone_transport_example.log 2>&1
@@ -332,7 +332,38 @@ grep -q \
 echo "Standalone transport integration: PASS"
 
 echo
-echo "[9/9] Testing installed package from downstream project ..."
+echo "[9/11] Running environment-provider integration test ..."
+
+./build-cmake/standalone_environment_provider_example \
+    > build-cmake/standalone_environment_provider_example.log 2>&1
+
+grep -q \
+    "\[PsSource\] Replaced positron process 'annihil'" \
+    build-cmake/standalone_environment_provider_example.log ||
+    fail "Environment-provider example did not register the PsSource process."
+
+grep -q \
+    "\[EnvironmentProviderExample\] PASS" \
+    build-cmake/standalone_environment_provider_example.log ||
+    fail "Environment-provider example did not complete successfully."
+
+echo "Environment-provider integration: PASS"
+
+echo
+echo "[10/11] Running local-environment resolution test ..."
+
+./build-cmake/standalone_local_environment_example \
+    > build-cmake/standalone_local_environment_example.log 2>&1
+
+grep -q \
+    "\[LocalEnvironmentExample\] PASS" \
+    build-cmake/standalone_local_environment_example.log ||
+    fail "Local-environment example did not complete successfully."
+
+echo "Local-environment resolution: PASS"
+
+echo
+echo "[11/11] Testing installed package from downstream project ..."
 
 rm -rf install-test downstream-test
 mkdir -p downstream-test
@@ -394,4 +425,6 @@ echo "Smoke test completed successfully."
 echo "  - native Geant4 mode: PASS"
 echo "  - explicit provider mode: PASS"
 echo "  - standalone transport integration: PASS"
+echo "  - environment-provider integration: PASS"
+echo "  - local-environment resolution: PASS"
 echo "  - installed-package downstream integration: PASS"

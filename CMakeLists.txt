@@ -24,6 +24,9 @@ set(
     PsTerminalStateBuilder.hh
     TimedEventModel.hh
     PsSourceAnnihilationObserver.hh
+    PsSourceEnvironmentProvider.hh
+    FixedPsSourceEnvironmentProvider.hh
+    CopyNumberPsSourceEnvironmentProvider.hh
 )
 
 add_library(
@@ -120,4 +123,26 @@ install(
         ${CMAKE_CURRENT_BINARY_DIR}/PsSourceConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/PsSourceConfigVersion.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PsSource
+)
+
+add_executable(
+    standalone_environment_provider_example
+    standalone_environment_provider_example.cc
+)
+
+target_link_libraries(
+    standalone_environment_provider_example
+    PRIVATE
+        PsSource::PsSource
+)
+
+add_executable(
+    standalone_local_environment_example
+    standalone_local_environment_example.cc
+)
+
+target_link_libraries(
+    standalone_local_environment_example
+    PRIVATE
+        PsSource::PsSource
 )

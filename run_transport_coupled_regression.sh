@@ -229,6 +229,68 @@ run_case \
     "direct-2g-zero-delay" \
     1 0 0 0 0
 
+echo
+echo "Running equivalent fixed-environment-provider case..."
+
+provider_run_dir="${RUN_ROOT}/direct_2g_zero_delay_provider"
+mkdir -p "${provider_run_dir}"
+
+(
+    cd "${provider_run_dir}"
+
+    "${PS_TIMING}" \
+        --generation-mode transport-coupled \
+        --transport-use-fixed-environment-provider \
+        --beam-on "${EVENT_COUNT}" \
+        --f-direct 1 \
+        --f-pps 0 \
+        --f-ops 0 \
+        --ortho-3g-fraction 0 \
+        --delay-mode fixed \
+        --fixed-delay-ns 0 \
+        --three-gamma-model approximate \
+        --prompt off \
+        --positron-range off \
+        --positron-kev 0.0001 \
+        > run.log 2>&1
+)
+
+python "${VALIDATOR}" \
+    "${provider_run_dir}/annihilation_summary.csv" \
+    "${provider_run_dir}/annihilation_gammas.csv" \
+    --case direct-2g-zero-delay \
+    --expected-events "${EVENT_COUNT}" \
+    --json-out "${provider_run_dir}/validation.json"
+
+python - \
+    "${RUN_ROOT}/direct_2g_zero_delay/annihilation_summary.csv" \
+    "${provider_run_dir}/annihilation_summary.csv" \
+    "${RUN_ROOT}/direct_2g_zero_delay/annihilation_gammas.csv" \
+    "${provider_run_dir}/annihilation_gammas.csv" <<'PY_COMPARE'
+import sys
+from pathlib import Path
+
+fixed_summary = Path(sys.argv[1]).read_bytes()
+provider_summary = Path(sys.argv[2]).read_bytes()
+fixed_gammas = Path(sys.argv[3]).read_bytes()
+provider_gammas = Path(sys.argv[4]).read_bytes()
+
+if fixed_summary != provider_summary:
+    raise SystemExit(
+        "Fixed-config and provider summary CSV files differ."
+    )
+
+if fixed_gammas != provider_gammas:
+    raise SystemExit(
+        "Fixed-config and provider gamma CSV files differ."
+    )
+
+print(
+    "PASS: fixed-config and fixed-provider deterministic "
+    "outputs are byte-for-byte identical"
+)
+PY_COMPARE
+
 run_no_truth_case \
     "direct_2g_zero_delay_no_truth" \
     "direct-2g-zero-delay-no-truth"
@@ -343,6 +405,7 @@ echo "Events per case: ${EVENT_COUNT}"
 echo "Results directory: ${RUN_ROOT}"
 echo
 echo "  PASS  direct-2g-zero-delay"
+echo "  PASS  fixed-config/fixed-provider equivalence"
 echo "  PASS  direct-2g-zero-delay-no-truth"
 echo "  PASS  truth/no-truth photon equivalence"
 echo "  PASS  pps-2g-fixed-delay"
