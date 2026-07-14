@@ -48,6 +48,8 @@ polarization_test_polarized/
 local_reference/
 ore_powell_reference_run/
 build-cmake/
+/install-test/
+/downstream-test/
 
 # Generated comparison products
 three_gamma_comparison_*.csv

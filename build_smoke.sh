@@ -99,7 +99,7 @@ echo "Build mode     : standalone Geant4"
 echo "-------------------------------------------------------"
 
 echo
-echo "[1/8] Building ps_main ..."
+echo "[1/9] Building ps_main ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -108,7 +108,7 @@ echo "[1/8] Building ps_main ..."
     $G4_LIBS_STR
 
 echo
-echo "[2/8] Building ps_timing ..."
+echo "[2/9] Building ps_timing ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main_timing.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -117,7 +117,7 @@ echo "[2/8] Building ps_timing ..."
     $G4_LIBS_STR
 
 echo
-echo "[3/8] Building standalone transport example ..."
+echo "[3/9] Building standalone transport example ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     standalone_transport_example.cc \
@@ -132,7 +132,7 @@ echo "[3/8] Building standalone transport example ..."
     $G4_LIBS_STR
 
 echo
-echo "[4/8] Building CMake library and standalone example ..."
+echo "[4/9] Building CMake library and standalone example ..."
 
 cmake -S . -B build-cmake \
     -DCMAKE_BUILD_TYPE=Release \
@@ -141,13 +141,13 @@ cmake -S . -B build-cmake \
 cmake --build build-cmake -j
 
 echo
-echo "[5/8] Smoke-checking ps_main front end ..."
+echo "[5/9] Smoke-checking ps_main front end ..."
 ./ps_main --generation-mode native   --beam-on 5 --prompt on  >/dev/null 2>&1
 ./ps_main --generation-mode explicit --beam-on 5 --prompt off >/dev/null 2>&1
 echo "ps_main ran successfully in both native and explicit modes."
 
 echo
-echo "[6/8] Running native Geant4 timing smoke test ..."
+echo "[6/9] Running native Geant4 timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv native_smoke.log explicit_smoke.log
 
 ./ps_timing \
@@ -212,7 +212,7 @@ echo "Native hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[7/8] Running explicit provider timing smoke test ..."
+echo "[7/9] Running explicit provider timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv
 
 ./ps_timing \
@@ -314,10 +314,10 @@ echo "Explicit hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[8/8] Running standalone transport integration test ..."
+echo "[8/9] Running standalone transport integration test ..."
 
 ./build-cmake/standalone_transport_example \
-    > standalone_transport_example.log 2>&1
+    > build-cmake/standalone_transport_example.log 2>&1
 
 grep -q \
     "\[PsSource\] Replaced positron process 'annihil'" \
@@ -332,7 +332,66 @@ grep -q \
 echo "Standalone transport integration: PASS"
 
 echo
+echo "[9/9] Testing installed package from downstream project ..."
+
+rm -rf install-test downstream-test
+mkdir -p downstream-test
+
+cmake --install build-cmake \
+    --prefix "$PWD/install-test"
+
+cp standalone_transport_example.cc \
+    downstream-test/main.cc
+
+cat > downstream-test/CMakeLists.txt <<'EOF'
+cmake_minimum_required(VERSION 3.20)
+
+project(
+    PsSourceDownstreamTest
+    LANGUAGES CXX
+)
+
+find_package(Geant4 REQUIRED)
+find_package(PsSource REQUIRED)
+
+add_executable(
+    pssource_downstream_test
+    main.cc
+)
+
+target_compile_features(
+    pssource_downstream_test
+    PRIVATE
+        cxx_std_17
+)
+
+target_link_libraries(
+    pssource_downstream_test
+    PRIVATE
+        PsSource::PsSource
+)
+EOF
+
+cmake -S downstream-test \
+    -B downstream-test/build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH="$PWD/install-test" \
+    -DGeant4_DIR="$CONDA_PREFIX/lib/cmake/Geant4"
+
+cmake --build downstream-test/build -j
+
+./downstream-test/build/pssource_downstream_test \
+    > downstream-test/run.log 2>&1
+
+grep -q \
+    'PASS: run completed without PsSource generator, truth, event action, or tracking action.' \
+    downstream-test/run.log
+
+echo "Installed-package downstream integration: PASS"
+
+echo
 echo "Smoke test completed successfully."
 echo "  - native Geant4 mode: PASS"
 echo "  - explicit provider mode: PASS"
 echo "  - standalone transport integration: PASS"
+echo "  - installed-package downstream integration: PASS"

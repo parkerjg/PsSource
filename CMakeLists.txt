@@ -6,7 +6,24 @@ project(
     LANGUAGES CXX
 )
 
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
 find_package(Geant4 REQUIRED)
+
+set(
+    PS_SOURCE_PUBLIC_HEADERS
+    ConfigurablePsModel.hh
+    FixedParameterizedPsModel.hh
+    OrePowellPsModel.hh
+    PsPhysicsModel.hh
+    PsSourceAnnihilationConfig.hh
+    PsSourceAnnihilationPhysics.hh
+    PsSourceAnnihilationProcess.hh
+    PsTerminalState.hh
+    PsTerminalStateBuilder.hh
+    TimedEventModel.hh
+)
 
 add_library(
     PsSource
@@ -18,6 +35,12 @@ add_library(
     PsSourceAnnihilationPhysics.cc
 )
 
+add_library(
+    PsSource::PsSource
+    ALIAS
+    PsSource
+)
+
 target_compile_features(
     PsSource
     PUBLIC
@@ -27,7 +50,8 @@ target_compile_features(
 target_include_directories(
     PsSource
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/PsSource>
 )
 
 target_link_libraries(
@@ -42,6 +66,15 @@ target_include_directories(
         ${Geant4_INCLUDE_DIRS}
 )
 
+set_target_properties(
+    PsSource
+    PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION 3
+        PUBLIC_HEADER "${PS_SOURCE_PUBLIC_HEADERS}"
+        EXPORT_NAME PsSource
+)
+
 add_executable(
     standalone_transport_example
     standalone_transport_example.cc
@@ -50,5 +83,40 @@ add_executable(
 target_link_libraries(
     standalone_transport_example
     PRIVATE
-        PsSource
+        PsSource::PsSource
+)
+
+install(
+    TARGETS PsSource
+    EXPORT PsSourceTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/PsSource
+)
+
+install(
+    EXPORT PsSourceTargets
+    FILE PsSourceTargets.cmake
+    NAMESPACE PsSource::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PsSource
+)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/PsSourceConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/PsSourceConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PsSource
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/PsSourceConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/PsSourceConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/PsSourceConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/PsSource
 )
