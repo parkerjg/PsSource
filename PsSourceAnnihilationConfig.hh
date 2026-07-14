@@ -3,6 +3,7 @@
 
 #include "ConfigurablePsModel.hh"
 #include "PsPhysicsModel.hh"
+#include "PsSourceAnnihilationObserver.hh"
 
 struct PsSourceAnnihilationConfig {
     PsEnvironment environment;
@@ -16,6 +17,10 @@ struct PsSourceAnnihilationConfig {
 
     ConfigurablePsModel::ThreeGammaModel three_gamma_model =
         ConfigurablePsModel::ThreeGammaModel::ApproximatePhaseSpace;
+
+    // Optional, non-owning observer. The caller must ensure that the
+    // observer remains alive while the Geant4 run manager uses this physics.
+    IPsSourceAnnihilationObserver* observer = nullptr;
 };
 
 #endif

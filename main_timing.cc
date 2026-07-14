@@ -2,7 +2,9 @@
 #include "PositroniumTruthInfo.hh"
 #include "PsTerminalStateBuilder.hh"
 #include "PsSourceAnnihilationPhysics.hh"
+#include "PsSourceAnnihilationObserver.hh"
 
+#include "G4EventManager.hh"
 #include "G4Box.hh"
 #include "G4EmLivermorePolarizedPhysics.hh"
 #include "G4EmParameters.hh"
@@ -906,6 +908,95 @@ private:
     bool m_initialized_file = false;
 };
 
+class PositroniumTruthObserver
+    : public IPsSourceAnnihilationObserver {
+public:
+    void OnPsSourceAnnihilation(
+        const PsSourceAnnihilationRecord& record
+    ) override
+    {
+        G4EventManager* event_manager =
+            G4EventManager::GetEventManager();
+
+        G4Event* current_event =
+            event_manager
+                ? event_manager->GetNonconstCurrentEvent()
+                : nullptr;
+
+        auto* truth =
+            current_event
+                ? dynamic_cast<PositroniumTruthInfo*>(
+                      current_event->GetUserInformation()
+                  )
+                : nullptr;
+
+        if (!truth) {
+            return;
+        }
+
+        truth->ps_class_id =
+            static_cast<int>(record.ps_class);
+
+        truth->annihilation_mode =
+            record.annihilation_mode;
+
+        truth->positron_terminal_time_ns =
+            record.positron_terminal_time_ns;
+
+        truth->sampled_ps_delay_ns =
+            record.sampled_ps_delay_ns;
+
+        truth->delay_ns =
+            record.annihilation_time_ns;
+
+        truth->ann_x_mm =
+            record.annihilation_position_mm[0];
+
+        truth->ann_y_mm =
+            record.annihilation_position_mm[1];
+
+        truth->ann_z_mm =
+            record.annihilation_position_mm[2];
+
+        const double displacement_x_mm =
+            truth->ann_x_mm -
+            truth->source_x_mm;
+
+        const double displacement_y_mm =
+            truth->ann_y_mm -
+            truth->source_y_mm;
+
+        const double displacement_z_mm =
+            truth->ann_z_mm -
+            truth->source_z_mm;
+
+        truth->positron_range_mm =
+            std::sqrt(
+                displacement_x_mm * displacement_x_mm +
+                displacement_y_mm * displacement_y_mm +
+                displacement_z_mm * displacement_z_mm
+            );
+
+        truth->medium_id =
+            record.medium_id;
+
+        truth->local_tau_ns =
+            record.local_tau_ns;
+
+        truth->physics_model_name =
+            record.model_name;
+
+        truth->physics_model_version =
+            record.model_version;
+
+        truth->physics_validation_status =
+            record.validation_status;
+
+        truth->declared_annihilation_valid =
+            true;
+    }
+};
+
 // -----------------------------------------------------------------------------
 // Event-level annihilation truth capture
 // -----------------------------------------------------------------------------
@@ -1760,6 +1851,8 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    PositroniumTruthObserver truth_observer;
+
     auto* run_manager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
 
     run_manager->SetUserInitialization(new TimingDetectorConstruction(opt.world_material));
@@ -1840,6 +1933,9 @@ int main(int argc, char** argv)
                         Geant4PolarizedOrePowell;
                 break;
         }
+
+        annihilation_config.observer =
+            &truth_observer;
 
         physics->RegisterPhysics(
             new PsSourceAnnihilationPhysics(

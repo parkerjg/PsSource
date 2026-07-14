@@ -23,6 +23,7 @@ set(
     PsTerminalState.hh
     PsTerminalStateBuilder.hh
     TimedEventModel.hh
+    PsSourceAnnihilationObserver.hh
 )
 
 add_library(

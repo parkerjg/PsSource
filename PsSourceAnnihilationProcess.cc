@@ -1,5 +1,4 @@
 #include "PsSourceAnnihilationProcess.hh"
-#include "PositroniumTruthInfo.hh"
 
 #include "G4DynamicParticle.hh"
 #include "G4Exception.hh"
@@ -10,11 +9,8 @@
 #include "G4ThreeVector.hh"
 #include "G4Track.hh"
 #include "G4VParticleChange.hh"
-#include "G4Event.hh"
-#include "G4EventManager.hh"
 
 #include <exception>
-#include <cmath>
 
 PsSourceAnnihilationProcess::
 PsSourceAnnihilationProcess(
@@ -120,106 +116,71 @@ PsSourceAnnihilationProcess::AtRestDoIt(
         track.GetGlobalTime() +
         model_result.delay_ns * ns;
 
-    G4EventManager* event_manager =
-        G4EventManager::GetEventManager();
-
-    G4Event* current_event =
-        event_manager
-            ? event_manager->GetNonconstCurrentEvent()
-            : nullptr;
-
-    auto* truth =
-        current_event
-            ? dynamic_cast<PositroniumTruthInfo*>(
-                  current_event->GetUserInformation()
-              )
-            : nullptr;
-
-    if (truth) {
-
-        truth->ps_class_id =
-            static_cast<int>(
-                model_result.ps_class
-            );
-
-        truth->annihilation_mode =
-            model_result.annihilation_mode;
-
-        // Total event time from the Geant4 event origin to annihilation.
-        // This includes positron transport followed by the sampled Ps delay.
-        truth->positron_terminal_time_ns =
-            track.GetGlobalTime() / ns;
-
-        truth->sampled_ps_delay_ns =
-            model_result.delay_ns;
-
-        truth->delay_ns =
-            truth->positron_terminal_time_ns +
-            truth->sampled_ps_delay_ns;
-
-        const G4ThreeVector& annihilation_position =
-            track.GetPosition();
-
-        truth->ann_x_mm =
-            annihilation_position.x() / mm;
-
-        truth->ann_y_mm =
-            annihilation_position.y() / mm;
-
-        truth->ann_z_mm =
-            annihilation_position.z() / mm;
-
-        const double displacement_x_mm =
-            truth->ann_x_mm -
-            truth->source_x_mm;
-
-        const double displacement_y_mm =
-            truth->ann_y_mm -
-            truth->source_y_mm;
-
-        const double displacement_z_mm =
-            truth->ann_z_mm -
-            truth->source_z_mm;
-
-        truth->positron_range_mm =
-            std::sqrt(
-                displacement_x_mm * displacement_x_mm +
-                displacement_y_mm * displacement_y_mm +
-                displacement_z_mm * displacement_z_mm
-            );
-
-        truth->medium_id =
-            m_config.environment.medium_id;
+    if (m_config.observer) {
+        double local_tau_ns = 0.0;
 
         switch (model_result.ps_class) {
             case PsClass::Direct2g:
-                truth->local_tau_ns =
+                local_tau_ns =
                     m_config.environment.tau_direct_ns;
                 break;
 
             case PsClass::ParaPs2g:
-                truth->local_tau_ns =
+                local_tau_ns =
                     m_config.environment.tau_pps_ns;
                 break;
 
             case PsClass::OrthoPs2g:
             case PsClass::OrthoPs3g:
-                truth->local_tau_ns =
+                local_tau_ns =
                     m_config.environment.tau_ops_ns;
                 break;
         }
 
-        truth->physics_model_name =
+        const G4ThreeVector& annihilation_position =
+            track.GetPosition();
+
+        PsSourceAnnihilationRecord record;
+
+        record.ps_class =
+            model_result.ps_class;
+
+        record.annihilation_mode =
+            model_result.annihilation_mode;
+
+        record.positron_terminal_time_ns =
+            track.GetGlobalTime() / ns;
+
+        record.sampled_ps_delay_ns =
+            model_result.delay_ns;
+
+        record.annihilation_time_ns =
+            photon_birth_time / ns;
+
+        record.annihilation_position_mm = {
+            annihilation_position.x() / mm,
+            annihilation_position.y() / mm,
+            annihilation_position.z() / mm
+        };
+
+        record.medium_id =
+            m_config.environment.medium_id;
+
+        record.local_tau_ns =
+            local_tau_ns;
+
+        record.model_name =
             model_result.model_name;
 
-        truth->physics_model_version =
+        record.model_version =
             model_result.model_version;
 
-        truth->physics_validation_status =
+        record.validation_status =
             model_result.validation_status;
 
-        truth->declared_annihilation_valid =
-            true;
+        m_config.observer->OnPsSourceAnnihilation(
+            record
+        );
     }
 
     auto* gamma_definition =
