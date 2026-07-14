@@ -1,4 +1,4 @@
-#include "CopyNumberPsSourceEnvironmentProvider.hh"
+#include "PsSourceEnvironmentProvider.hh"
 #include "PsSourceAnnihilationPhysics.hh"
 #include "PsSourceAnnihilationObserver.hh"
 
@@ -20,6 +20,38 @@
 #include "G4VUserDetectorConstruction.hh"
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "G4ios.hh"
+
+class CopyNumberEnvironmentProvider
+    : public IPsSourceEnvironmentProvider {
+public:
+    CopyNumberEnvironmentProvider(
+        int selected_copy_number,
+        const PsEnvironment& selected_environment,
+        const PsEnvironment& default_environment
+    )
+        : m_selected_copy_number(selected_copy_number),
+          m_selected_environment(selected_environment),
+          m_default_environment(default_environment)
+    {
+    }
+
+    PsEnvironment ResolveEnvironment(
+        const PsTerminalState& terminal_state
+    ) const override
+    {
+        return (
+            terminal_state.copy_number ==
+            m_selected_copy_number
+        )
+            ? m_selected_environment
+            : m_default_environment;
+    }
+
+private:
+    int m_selected_copy_number = -1;
+    PsEnvironment m_selected_environment;
+    PsEnvironment m_default_environment;
+};
 
 class LocalEnvironmentDetector
     : public G4VUserDetectorConstruction {
@@ -230,7 +262,7 @@ int main()
     ortho_environment.ops_2g_fraction = 0.0;
     ortho_environment.ops_3g_fraction = 1.0;
 
-    CopyNumberPsSourceEnvironmentProvider
+    CopyNumberEnvironmentProvider
         environment_provider(
             1,
             ortho_environment,
@@ -244,13 +276,13 @@ int main()
         &environment_provider;
 
     config.delay_mode =
-        ConfigurablePsModel::DelayMode::Fixed;
+        PsSourceDelayMode::Fixed;
 
     config.fixed_delay_ns = 0.0;
     config.enable_three_gamma = true;
 
     config.three_gamma_model =
-        ConfigurablePsModel::ThreeGammaModel::
+        PsSourceThreeGammaModel::
             ApproximatePhaseSpace;
 
     config.observer = &observer;

@@ -8,25 +8,19 @@ project(
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+include(CTest)
 
 find_package(Geant4 REQUIRED)
 
 set(
     PS_SOURCE_PUBLIC_HEADERS
-    ConfigurablePsModel.hh
-    FixedParameterizedPsModel.hh
-    OrePowellPsModel.hh
-    PsPhysicsModel.hh
     PsSourceAnnihilationConfig.hh
     PsSourceAnnihilationPhysics.hh
-    PsSourceAnnihilationProcess.hh
     PsTerminalState.hh
-    PsTerminalStateBuilder.hh
-    TimedEventModel.hh
     PsSourceAnnihilationObserver.hh
     PsSourceEnvironmentProvider.hh
+    PsSourceTypes.hh
     FixedPsSourceEnvironmentProvider.hh
-    CopyNumberPsSourceEnvironmentProvider.hh
 )
 
 add_library(
@@ -146,3 +140,20 @@ target_link_libraries(
     PRIVATE
         PsSource::PsSource
 )
+
+if(BUILD_TESTING)
+    add_test(
+        NAME PsSource.StandaloneTransport
+        COMMAND standalone_transport_example
+    )
+
+    add_test(
+        NAME PsSource.FixedEnvironmentProvider
+        COMMAND standalone_environment_provider_example
+    )
+
+    add_test(
+        NAME PsSource.LocalEnvironmentResolution
+        COMMAND standalone_local_environment_example
+    )
+endif()

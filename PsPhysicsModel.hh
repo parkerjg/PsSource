@@ -1,31 +1,12 @@
 #ifndef PS_PHYSICS_MODEL_HH
 #define PS_PHYSICS_MODEL_HH
 
+#include "PsSourceTypes.hh"
 #include "TimedEventModel.hh"
 
 #include <array>
 #include <string>
 #include <vector>
-
-// Local properties available to the positronium physics model.
-//
-// Initially these values will come from fixed configuration parameters.
-// Later they can be supplied by a Geant4 material, region, phantom,
-// or user-defined environment provider.
-struct PsEnvironment {
-    int medium_id = 0;
-
-    double f_direct = 0.3;
-    double f_pps = 0.2;
-    double f_ops = 0.5;
-
-    double tau_direct_ns = 0.0;
-    double tau_pps_ns = 0.125;
-    double tau_ops_ns = 3.0;
-
-    double ops_2g_fraction = 0.0;
-    double ops_3g_fraction = 1.0;
-};
 
 // One photon returned by a positronium physics model.
 struct PsPhoton {

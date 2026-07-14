@@ -1,17 +1,12 @@
 #ifndef TIMED_EVENT_MODEL_HH
 #define TIMED_EVENT_MODEL_HH
 
+#include "PsSourceTypes.hh"
+
 #include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
-
-enum class PsClass : int {
-    Direct2g = 0,
-    ParaPs2g = 1,
-    OrthoPs2g = 2,
-    OrthoPs3g = 3
-};
 
 enum class PhotonRole : int {
     Prompt = 0,

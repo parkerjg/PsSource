@@ -8,10 +8,7 @@
 
 class FixedParameterizedPsModel : public IPsPhysicsModel {
 public:
-    enum class DelayMode {
-        Fixed,
-        Exponential
-    };
+    using DelayMode = PsSourceDelayMode;
 
     FixedParameterizedPsModel();
 

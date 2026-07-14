@@ -1,7 +1,7 @@
 #ifndef PS_SOURCE_ANNIHILATION_OBSERVER_HH
 #define PS_SOURCE_ANNIHILATION_OBSERVER_HH
 
-#include "TimedEventModel.hh"
+#include "PsSourceTypes.hh"
 
 #include <array>
 #include <string>

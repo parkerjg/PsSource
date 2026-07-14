@@ -99,7 +99,7 @@ echo "Build mode     : standalone Geant4"
 echo "-------------------------------------------------------"
 
 echo
-echo "[1/11] Building ps_main ..."
+echo "[1/12] Building ps_main ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -108,7 +108,7 @@ echo "[1/11] Building ps_main ..."
     $G4_LIBS_STR
 
 echo
-echo "[2/11] Building ps_timing ..."
+echo "[2/12] Building ps_timing ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main_timing.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -117,7 +117,7 @@ echo "[2/11] Building ps_timing ..."
     $G4_LIBS_STR
 
 echo
-echo "[3/11] Building standalone transport example ..."
+echo "[3/12] Building standalone transport example ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     standalone_transport_example.cc \
@@ -132,7 +132,7 @@ echo "[3/11] Building standalone transport example ..."
     $G4_LIBS_STR
 
 echo
-echo "[4/11] Building CMake library and standalone example ..."
+echo "[4/12] Building CMake library and standalone example ..."
 
 cmake -S . -B build-cmake \
     -DCMAKE_BUILD_TYPE=Release \
@@ -141,13 +141,22 @@ cmake -S . -B build-cmake \
 cmake --build build-cmake -j
 
 echo
-echo "[5/11] Smoke-checking ps_main front end ..."
+echo "[5/12] Running CTest integration suite ..."
+
+ctest \
+    --test-dir build-cmake \
+    --output-on-failure
+
+echo "CTest integration suite: PASS"
+
+echo
+echo "[6/12] Smoke-checking ps_main front end ..."
 ./ps_main --generation-mode native   --beam-on 5 --prompt on  >/dev/null 2>&1
 ./ps_main --generation-mode explicit --beam-on 5 --prompt off >/dev/null 2>&1
 echo "ps_main ran successfully in both native and explicit modes."
 
 echo
-echo "[6/11] Running native Geant4 timing smoke test ..."
+echo "[7/12] Running native Geant4 timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv native_smoke.log explicit_smoke.log
 
 ./ps_timing \
@@ -212,7 +221,7 @@ echo "Native hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[7/11] Running explicit provider timing smoke test ..."
+echo "[8/12] Running explicit provider timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv
 
 ./ps_timing \
@@ -314,7 +323,7 @@ echo "Explicit hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[8/11] Running standalone transport integration test ..."
+echo "[9/12] Running standalone transport integration test ..."
 
 ./build-cmake/standalone_transport_example \
     > build-cmake/standalone_transport_example.log 2>&1
@@ -332,7 +341,7 @@ grep -q \
 echo "Standalone transport integration: PASS"
 
 echo
-echo "[9/11] Running environment-provider integration test ..."
+echo "[10/12] Running environment-provider integration test ..."
 
 ./build-cmake/standalone_environment_provider_example \
     > build-cmake/standalone_environment_provider_example.log 2>&1
@@ -350,7 +359,7 @@ grep -q \
 echo "Environment-provider integration: PASS"
 
 echo
-echo "[10/11] Running local-environment resolution test ..."
+echo "[11/12] Running local-environment resolution test ..."
 
 ./build-cmake/standalone_local_environment_example \
     > build-cmake/standalone_local_environment_example.log 2>&1
@@ -363,7 +372,7 @@ grep -q \
 echo "Local-environment resolution: PASS"
 
 echo
-echo "[11/11] Testing installed package from downstream project ..."
+echo "[12/12] Testing installed package from downstream project ..."
 
 rm -rf install-test downstream-test
 mkdir -p downstream-test
@@ -371,7 +380,7 @@ mkdir -p downstream-test
 cmake --install build-cmake \
     --prefix "$PWD/install-test"
 
-cp standalone_transport_example.cc \
+cp standalone_environment_provider_example.cc \
     downstream-test/main.cc
 
 cat > downstream-test/CMakeLists.txt <<'EOF'
@@ -415,13 +424,14 @@ cmake --build downstream-test/build -j
     > downstream-test/run.log 2>&1
 
 grep -q \
-    'PASS: run completed without PsSource generator, truth, event action, or tracking action.' \
+    'PASS: run completed through FixedPsSourceEnvironmentProvider' \
     downstream-test/run.log
 
 echo "Installed-package downstream integration: PASS"
 
 echo
 echo "Smoke test completed successfully."
+echo "  - CTest integration suite: PASS"
 echo "  - native Geant4 mode: PASS"
 echo "  - explicit provider mode: PASS"
 echo "  - standalone transport integration: PASS"

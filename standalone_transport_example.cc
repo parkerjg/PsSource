@@ -143,7 +143,7 @@ int main()
     config.environment.ops_3g_fraction = 0.0;
 
     config.delay_mode =
-        ConfigurablePsModel::DelayMode::Fixed;
+        PsSourceDelayMode::Fixed;
 
     config.fixed_delay_ns = 0.0;
     config.enable_three_gamma = false;

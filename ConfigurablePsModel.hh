@@ -9,14 +9,11 @@
 
 class ConfigurablePsModel : public IPsPhysicsModel {
 public:
-    enum class ThreeGammaModel {
-        ApproximatePhaseSpace,
-        Geant4OrePowell,
-        Geant4PolarizedOrePowell
-    };
+    using ThreeGammaModel =
+        PsSourceThreeGammaModel;
 
     using DelayMode =
-        FixedParameterizedPsModel::DelayMode;
+        PsSourceDelayMode;
 
     ConfigurablePsModel();
 
