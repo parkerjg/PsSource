@@ -99,7 +99,7 @@ echo "Build mode     : standalone Geant4"
 echo "-------------------------------------------------------"
 
 echo
-echo "[1/5] Building ps_main ..."
+echo "[1/7] Building ps_main ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -108,7 +108,7 @@ echo "[1/5] Building ps_main ..."
     $G4_LIBS_STR
 
 echo
-echo "[2/5] Building ps_timing ..."
+echo "[2/7] Building ps_timing ..."
 # shellcheck disable=SC2086
 "$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
     main_timing.cc PositroniumGenerator.cc PositroniumProvider.cc FixedParameterizedPsModel.cc OrePowellPsModel.cc ConfigurablePsModel.cc PsTerminalStateBuilder.cc PsSourceAnnihilationProcess.cc PsSourceAnnihilationPhysics.cc \
@@ -117,13 +117,28 @@ echo "[2/5] Building ps_timing ..."
     $G4_LIBS_STR
 
 echo
-echo "[3/5] Smoke-checking ps_main front end ..."
+echo "[3/7] Building standalone transport example ..."
+# shellcheck disable=SC2086
+"$CXX" "${CXXFLAGS[@]}" $G4_CFLAGS_STR \
+    standalone_transport_example.cc \
+    ConfigurablePsModel.cc \
+    FixedParameterizedPsModel.cc \
+    OrePowellPsModel.cc \
+    PsTerminalStateBuilder.cc \
+    PsSourceAnnihilationProcess.cc \
+    PsSourceAnnihilationPhysics.cc \
+    -o standalone_transport_example \
+    $RPATH_FLAG \
+    $G4_LIBS_STR
+
+echo
+echo "[4/7] Smoke-checking ps_main front end ..."
 ./ps_main --generation-mode native   --beam-on 5 --prompt on  >/dev/null 2>&1
 ./ps_main --generation-mode explicit --beam-on 5 --prompt off >/dev/null 2>&1
 echo "ps_main ran successfully in both native and explicit modes."
 
 echo
-echo "[4/5] Running native Geant4 timing smoke test ..."
+echo "[5/7] Running native Geant4 timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv native_smoke.log explicit_smoke.log
 
 ./ps_timing \
@@ -188,7 +203,7 @@ echo "Native hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
-echo "[5/5] Running explicit provider timing smoke test ..."
+echo "[6/7] Running explicit provider timing smoke test ..."
 rm -f hits.csv hits_plus.csv hits_minus.csv annihilation_summary.csv annihilation_gammas.csv
 
 ./ps_timing \
@@ -290,6 +305,25 @@ echo "Explicit hit file line counts:"
 wc -l hits_plus.csv hits_minus.csv
 
 echo
+echo "[7/7] Running standalone transport integration test ..."
+
+./standalone_transport_example \
+    > standalone_transport_example.log 2>&1
+
+grep -q \
+    "\[PsSource\] Replaced positron process 'annihil'" \
+    standalone_transport_example.log ||
+    fail "Standalone example did not register the PsSource process."
+
+grep -q \
+    "\[StandaloneExample\] PASS" \
+    standalone_transport_example.log ||
+    fail "Standalone example did not complete successfully."
+
+echo "Standalone transport integration: PASS"
+
+echo
 echo "Smoke test completed successfully."
 echo "  - native Geant4 mode: PASS"
 echo "  - explicit provider mode: PASS"
+echo "  - standalone transport integration: PASS"
