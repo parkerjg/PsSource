@@ -909,6 +909,20 @@ Validation of the annihilation models does not validate an application’s chose
 
 ---
 
+## Release
+
+The current public release is PsSource 3.0.0.
+
+```text
+Tag: pssource-v3.0.0
+Commit: 0f965f0
+Validated Geant4 baseline: 11.3.2
+```
+
+The `3.0.0` version identifies the third-generation transport-coupled PsSource architecture.
+
+---
+
 ## Citation
 
 If you use PsSource in published work, please cite the associated manuscript once available.

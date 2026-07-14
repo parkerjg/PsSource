@@ -1395,16 +1395,19 @@ The current validated reproducibility claims are limited to the sequential deter
 
 ## 37. Versioning Policy
 
-PsSource has not yet declared a stable `1.0.0` public release.
+PsSource 3.0.0 is the first public release of the transport-coupled architecture.
 
-The current branch and commit identify the validated implementation state:
+The release is identified by:
 
 ```text
-Branch: v3-transport-coupled
-Commit: dadc7b1
+Version: 3.0.0
+Tag: pssource-v3.0.0
+Commit: 0f965f0
 ```
 
-Until the first stable release:
+The major version reflects the third-generation PsSource architecture rather than two prior formally packaged public releases.
+
+For all releases beginning with 3.0.0:
 
 * public API changes must be documented explicitly;
 * changes to the seven installed headers require integration review;
@@ -1412,7 +1415,7 @@ Until the first stable release:
 * changes to enum values or record semantics must not be made silently;
 * repository commits and release tags should be used to identify reproducible software states.
 
-After the first stable public release, PsSource should follow semantic versioning:
+PsSource follows semantic versioning:
 
 ```text
 MAJOR.MINOR.PATCH
