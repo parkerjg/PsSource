@@ -881,6 +881,20 @@ Additional three-photon validation workflows include:
 
 Some benchmark scripts require previously prepared reference environments, containers, or datasets described in their corresponding repository documentation.
 
+### Entanglement validation of native 2γ delegation
+
+`entanglement_validation.cc` checks that PsSource preserves Geant4 quantum entanglement. A positron annihilates at the center of a thick plastic shell that acts as an ideal 4π Compton polarimeter. For pairs in which both photons first Compton scatter in the shell, the azimuthal angle Δφ between the two scattering planes is recorded, and `validate_entanglement_modulation.py` fits the entanglement ON/OFF ratio to `R(Δφ) = A[1 − M cos 2Δφ]`.
+
+Configurations: native Geant4, PsSource 100% direct, PsSource 100% delayed o-Ps pick-off (τ = 2 ns), and the 3.0.0 `IdealizedBackToBack` model as a negative control. PsSource must reproduce the native modulation, and the negative control must show none.
+
+On IU Big Red 200, from the repository root on a login node:
+
+```bash
+./run_entanglement_validation_br200.sh -A <slurm-account-name>
+```
+
+This builds the application with the Geant4 conda environment (`PSSOURCE_ENV`, default `/N/project/MIPHYS/QEPET/env`), submits an 8-task Slurm array (one node and 128 workers per configuration), and submits a dependent analysis job. Results, logs, provenance, and `entanglement_validation_summary.txt` are written under `/N/scratch/$USER/pssource_entanglement_validation/`. See the script header for settings.
+
 ---
 
 ## Scope and current limitations

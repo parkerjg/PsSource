@@ -152,6 +152,17 @@ target_link_libraries(
         PsSource::PsSource
 )
 
+add_executable(
+    entanglement_validation
+    entanglement_validation.cc
+)
+
+target_link_libraries(
+    entanglement_validation
+    PRIVATE
+        PsSource::PsSource
+)
+
 if(BUILD_TESTING)
     add_test(
         NAME PsSource.StandaloneTransport
