@@ -141,6 +141,17 @@ target_link_libraries(
         PsSource::PsSource
 )
 
+add_executable(
+    standalone_native_two_gamma_example
+    standalone_native_two_gamma_example.cc
+)
+
+target_link_libraries(
+    standalone_native_two_gamma_example
+    PRIVATE
+        PsSource::PsSource
+)
+
 if(BUILD_TESTING)
     add_test(
         NAME PsSource.StandaloneTransport
@@ -155,5 +166,10 @@ if(BUILD_TESTING)
     add_test(
         NAME PsSource.LocalEnvironmentResolution
         COMMAND standalone_local_environment_example
+    )
+
+    add_test(
+        NAME PsSource.NativeTwoGammaDelegation
+        COMMAND standalone_native_two_gamma_example
     )
 endif()

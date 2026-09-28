@@ -31,6 +31,19 @@ public:
         const PsEnvironment& environment
     ) const override;
 
+    // Sample only the annihilation class and positronium delay.
+    PsBranchResult SampleBranch(
+        const PsEnvironment& environment
+    ) const;
+
+    // Generate the photon final state for an already-sampled branch.
+    // Sample(environment) is equivalent to
+    // SampleFromBranch(SampleBranch(environment), environment).
+    PsModelResult SampleFromBranch(
+        const PsBranchResult& branch,
+        const PsEnvironment& environment
+    ) const;
+
     std::string Name() const override;
     std::string Version() const override;
     std::string ValidationStatus() const override;

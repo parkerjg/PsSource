@@ -51,12 +51,26 @@ PsModelResult ConfigurablePsModel::Sample(
     const PsEnvironment& environment
 ) const
 {
+    return SampleFromBranch(
+        SampleBranch(environment),
+        environment
+    );
+}
 
-    const PsBranchResult branch =
-        m_parameterized_model.SampleBranch(
-            environment
-        );
+PsBranchResult ConfigurablePsModel::SampleBranch(
+    const PsEnvironment& environment
+) const
+{
+    return m_parameterized_model.SampleBranch(
+        environment
+    );
+}
 
+PsModelResult ConfigurablePsModel::SampleFromBranch(
+    const PsBranchResult& branch,
+    const PsEnvironment& environment
+) const
+{
     PsModelResult result;
 
     result.ps_class =

@@ -26,8 +26,12 @@ public:
     ) override;
 
 private:
+    void CheckNativeConfiguration() const;
+
     PsSourceAnnihilationConfig m_config;
     ConfigurablePsModel m_model;
+
+    bool m_native_configuration_checked = false;
 };
 
 #endif

@@ -1941,6 +1941,12 @@ int main(int argc, char** argv)
         annihilation_config.enable_three_gamma =
             true;
 
+        // Keep the 3.0.0 manuscript regression outputs reproducible.
+        // Native 2-gamma delegation is covered by
+        // standalone_native_two_gamma_example.
+        annihilation_config.two_gamma_model =
+            PsSourceTwoGammaModel::IdealizedBackToBack;
+
         switch (opt.three_gamma_model) {
             case ThreeGammaModelChoice::Approximate:
                 annihilation_config.three_gamma_model =

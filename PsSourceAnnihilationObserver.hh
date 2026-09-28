@@ -7,6 +7,12 @@
 #include <string>
 
 struct PsSourceAnnihilationRecord {
+    // Geant4 event and positron track identifiers, for joining this record
+    // with other hits in the same event (for example, a prompt gamma).
+    // event_id is -1 when no Geant4 event is being processed.
+    int event_id = -1;
+    int positron_track_id = 0;
+
     PsClass ps_class = PsClass::Direct2g;
     int annihilation_mode = 2;
 

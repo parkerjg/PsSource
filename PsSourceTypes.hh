@@ -34,4 +34,19 @@ enum class PsSourceThreeGammaModel {
     Geant4PolarizedOrePowell
 };
 
+// Photon generation for the 2-gamma classes (direct, p-Ps, o-Ps pick-off).
+//
+// Geant4Native delegates the photon final state to the native Geant4
+// at-rest annihilation (G4eplusAnnihilation), so quantum entanglement,
+// polarization, and acolinearity follow the host's G4EmParameters
+// configuration. PsSource only shifts the photon emission time by the
+// sampled positronium delay.
+//
+// IdealizedBackToBack reproduces the PsSource 3.0 behavior: exactly
+// collinear 511 keV photons without polarization or entanglement.
+enum class PsSourceTwoGammaModel {
+    Geant4Native,
+    IdealizedBackToBack
+};
+
 #endif

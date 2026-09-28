@@ -26,6 +26,11 @@ struct PsSourceAnnihilationConfig {
     PsSourceThreeGammaModel three_gamma_model =
         PsSourceThreeGammaModel::ApproximatePhaseSpace;
 
+    // Photon generation for the 2-gamma classes. See PsSourceTypes.hh.
+    // Use IdealizedBackToBack to reproduce PsSource 3.0 results.
+    PsSourceTwoGammaModel two_gamma_model =
+        PsSourceTwoGammaModel::Geant4Native;
+
     // Optional, non-owning observer. The caller must ensure that the
     // observer remains alive while the Geant4 run manager uses this physics.
     IPsSourceAnnihilationObserver* observer = nullptr;
